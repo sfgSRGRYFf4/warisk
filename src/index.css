@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0A0E0B;
+  --color-bg-card: #111916;
+  --color-green-grid: #22C55E10;
+  --color-blue-player: #3B82F6;
+  --color-red-enemy: #EF4444;
+  --color-gray-neutral: #6B7280;
+  --color-gold-accent: #F59E0B;
+  --color-text-main: #E5E7EB;
+  --color-text-dim: #6B7280;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-military: 'Black Ops One', cursive;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-mono);
+  background-color: var(--color-bg);
+  color: var(--color-text-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Scanlines overlay */
+#root::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+}
+
+/* Pulsing red LIVE dot */
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.live-dot {
+  animation: pulse-live 1.5s ease-in-out infinite;
+}
+
+/* Screen shake */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+.screen-shake {
+  animation: shake 0.2s ease-in-out;
+}
+
+/* News ticker scroll */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-scroll {
+  animation: ticker-scroll var(--ticker-duration, 30s) linear infinite;
+}
+
+.ticker-scroll:hover {
+  animation-play-state: paused;
+}
+
+/* Action bar top glow */
+.action-bar-glow {
+  box-shadow: 0 -2px 16px rgba(34, 197, 94, 0.12);
+  border-image: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.4), transparent) 1;
+}
+
+/* Active phase subtle pulse */
+@keyframes phase-pulse {
+  0%, 100% { opacity: 1; text-shadow: 0 0 6px rgba(34, 197, 94, 0.3); }
+  50% { opacity: 0.85; text-shadow: 0 0 12px rgba(34, 197, 94, 0.5); }
+}
+
+.phase-active {
+  animation: phase-pulse 2s ease-in-out infinite;
+}
+
+/* NEXT PHASE button glow */
+@keyframes btn-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(34, 197, 94, 0.15); }
+  50% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.35); }
+}
+
+.next-phase-btn {
+  animation: btn-glow 2s ease-in-out infinite;
+}
+
+.next-phase-btn:hover {
+  animation: none;
+  box-shadow: 0 0 24px rgba(34, 197, 94, 0.5);
+}
+
+/* Button war animation — hover scale + glow */
+.btn-war {
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-war:hover {
+  transform: scale(1.04);
+  box-shadow: 0 0 24px rgba(34, 197, 94, 0.35), 0 0 48px rgba(34, 197, 94, 0.15);
+}
+
+.btn-war:active {
+  transform: scale(0.97);
+}
+
+/* Button press keyframe */
+@keyframes btn-press {
+  0% { transform: scale(0.95); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.btn-press {
+  animation: btn-press 0.3s ease-out;
+}
+
+/* Game terminal styles */
+.game-terminal {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 197, 94, 0.3) transparent;
+}
+
+.game-terminal::-webkit-scrollbar {
+  width: 4px;
+}
+
+.game-terminal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.game-terminal::-webkit-scrollbar-thumb {
+  background: rgba(34, 197, 94, 0.3);
+  border-radius: 2px;
+}
+
+/* Terminal entry fade-in */
+@keyframes terminal-entry {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.terminal-line {
+  animation: terminal-entry 0.2s ease-out;
+}
