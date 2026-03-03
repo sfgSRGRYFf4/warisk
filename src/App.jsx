@@ -530,6 +530,7 @@ const ISO_TO_GAME = {
   '716': { type: 'neutral', id: 'zimbabwe' },
   '524': { type: 'neutral', id: 'nepal' },
   '504': { type: 'neutral', id: 'morocco' },
+  '010': { type: 'neutral', id: 'antarctica' },
 }
 
 // Load world map data

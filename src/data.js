@@ -365,6 +365,7 @@ export const NEUTRAL_LABELS = {
   zimbabwe:    { name: "Zimbabwe",    label: "Invented the 100 trillion dollar bill. Relatable.", x: 388, y: 398 },
   nepal:       { name: "Nepal",       label: "Everest: for rich people who need a personality.", x: 568, y: 248 },
   morocco:     { name: "Morocco",     label: "France's ex. Not our problem.",        x: 248, y: 227 },
+  antarctica:  { name: "Antarctica",  label: "No oil yet. Give it 20 years.",        x: 450, y: 490 },
 };
 
 // ----------------------------------------------------------
