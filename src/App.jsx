@@ -2850,19 +2850,21 @@ export default function App() {
         return sum
       }, 0)
 
-  // Auto-save every 5 seconds while in game
-  useEffect(() => {
-    if (screen !== 'game') return
-    const interval = setInterval(() => {
-      saveGame(game)
-      setHasSave(true)
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [screen, game])
-
   // Economy tick — runs every second while in game screen
   const wariskPerSecRef = useRef(wariskPerSec)
   wariskPerSecRef.current = wariskPerSec
+
+  // Auto-save every 5 seconds while in game — use ref so interval isn't reset on every game update
+  const gameRef = useRef(game)
+  gameRef.current = game
+  useEffect(() => {
+    if (screen !== 'game') return
+    const interval = setInterval(() => {
+      saveGame(gameRef.current)
+      setHasSave(true)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [screen])
 
   useEffect(() => {
     if (screen !== 'game') return
@@ -2896,13 +2898,13 @@ export default function App() {
   const goToVictory = useCallback(() => {
     clearSave(); setHasSave(false)
     addLeaderboardEntry({
-      turns: game.turn,
-      difficulty: game.difficulty || 'normal',
-      nukes: game.totalNukes,
+      turns: gameRef.current.turn,
+      difficulty: gameRef.current.difficulty || 'normal',
+      nukes: gameRef.current.totalNukes,
       date: new Date().toLocaleDateString(),
     })
     setScreen('victory')
-  }, [game.turn, game.difficulty, game.totalNukes])
+  }, [])
   const goToDefeat = useCallback(() => { clearSave(); setHasSave(false); setScreen('defeat') }, [])
   const goToMenu = useCallback(() => { MusicEngine.stop(); setMusicOn(false); setScreen('menu') }, [])
 
