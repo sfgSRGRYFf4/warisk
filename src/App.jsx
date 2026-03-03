@@ -517,6 +517,19 @@ const ISO_TO_GAME = {
   '729': { type: 'neutral', id: 'sudan' },
   '231': { type: 'neutral', id: 'ethiopia' },
   '180': { type: 'neutral', id: 'congo' },
+  // Batch 3
+  '320': { type: 'neutral', id: 'guatemala' },
+  '340': { type: 'neutral', id: 'honduras' },
+  '332': { type: 'neutral', id: 'haiti' },
+  '208': { type: 'neutral', id: 'denmark' },
+  '372': { type: 'neutral', id: 'ireland' },
+  '642': { type: 'neutral', id: 'romania' },
+  '398': { type: 'neutral', id: 'kazakhstan' },
+  '068': { type: 'neutral', id: 'bolivia' },
+  '404': { type: 'neutral', id: 'kenya' },
+  '716': { type: 'neutral', id: 'zimbabwe' },
+  '524': { type: 'neutral', id: 'nepal' },
+  '504': { type: 'neutral', id: 'morocco' },
 }
 
 // Load world map data

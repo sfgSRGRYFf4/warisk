@@ -352,6 +352,19 @@ export const NEUTRAL_LABELS = {
   sudan:       { name: "Sudan",       label: "Location: Africa. Details: classified.", x: 420, y: 290 },
   ethiopia:    { name: "Ethiopia",    label: "Coffee origin. Off limits.",           x: 440, y: 310 },
   congo:       { name: "Congo",       label: "We're 'helping'",                     x: 390, y: 355 },
+  // --- BATCH 3 ---
+  guatemala:   { name: "Guatemala",   label: "1954 called. CIA answered.",           x:  88, y: 262 },
+  honduras:    { name: "Honduras",    label: "Banana republic. Literally.",          x: 107, y: 272 },
+  haiti:       { name: "Haiti",       label: "The one we 'help' every 10 years.",   x: 165, y: 258 },
+  denmark:     { name: "Denmark",     label: "Currently ignoring our Greenland calls.", x: 292, y: 112 },
+  ireland:     { name: "Ireland",     label: "Neutral. We respect it. Mostly.",     x: 247, y: 128 },
+  romania:     { name: "Romania",     label: "Dracula country. Also in NATO.",       x: 346, y: 163 },
+  kazakhstan:  { name: "Kazakhstan",  label: "Borat's home. Confirmed real place.", x: 528, y: 155 },
+  bolivia:     { name: "Bolivia",     label: "We did a coup here. CIA: 'Classic.'", x: 193, y: 390 },
+  kenya:       { name: "Kenya",       label: "Obama birthplace. Still investigating.", x: 428, y: 342 },
+  zimbabwe:    { name: "Zimbabwe",    label: "Invented the 100 trillion dollar bill. Relatable.", x: 388, y: 398 },
+  nepal:       { name: "Nepal",       label: "Everest: for rich people who need a personality.", x: 568, y: 248 },
+  morocco:     { name: "Morocco",     label: "France's ex. Not our problem.",        x: 248, y: 227 },
 };
 
 // ----------------------------------------------------------
