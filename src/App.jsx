@@ -12,6 +12,15 @@ import {
 // State machine: MENU → GAME → VICTORY
 // ============================================================
 
+// Short names for shop buttons on mobile
+const SHOP_SHORT = {
+  shield:       'Shield',
+  drone:        'Drone',
+  missile:      'Missile',
+  nuke:         'Nuke',
+  un_resolution:'UN Res.',
+}
+
 // ----------------------------------------------------------
 // SOUND ENGINE — procedural sounds via Web Audio API
 // ----------------------------------------------------------
@@ -542,8 +551,8 @@ const WORLD_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.jso
 function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerritoryClick, onAllyClick, attackFrom, fortifyFrom, dragGuardRef, highlightedTargets }) {
   const [worldFeatures, setWorldFeatures] = useState([])
   const [centroids, setCentroids] = useState({})
-  const [zoom, setZoom] = useState(() => window.innerWidth < 640 ? 1.5 : 1.1)
-  const [pan, setPan] = useState(() => window.innerWidth < 640 ? { x: 20, y: -15 } : { x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1.1)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
   const containerRef = useRef(null)
   const dragRef = useRef({ dragging: false, wasDragging: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0 })
   const tooltipTimerRef = useRef(null)
@@ -1094,7 +1103,7 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
       {/* Zoom indicator */}
       {(zoom < 1.05 || zoom > 1.15) && (
         <div className="absolute top-2 right-2 z-30 bg-bg-card/80 border border-green-500/20 px-2 py-1 text-[9px] text-green-400">
-          ZOOM: {zoom.toFixed(1)}x │ <span className="hidden sm:inline">Drag to pan │ </span><span className="sm:hidden">Pinch/drag │ </span><button onClick={() => { setZoom(window.innerWidth < 640 ? 1.5 : 1.1); setPan(window.innerWidth < 640 ? { x: 20, y: -15 } : { x: 0, y: 0 }) }} className="text-text-dim hover:text-green-400 cursor-pointer">RESET</button>
+          ZOOM: {zoom.toFixed(1)}x │ <span className="hidden sm:inline">Drag to pan │ </span><span className="sm:hidden">Pinch/drag │ </span><button onClick={() => { setZoom(1.1); setPan({ x: 0, y: 0 }) }} className="text-text-dim hover:text-green-400 cursor-pointer">RESET</button>
         </div>
       )}
 
@@ -2531,7 +2540,10 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
                       : 'border-gray-neutral/20 bg-transparent text-text-dim/40 cursor-not-allowed'
                 }`}
               >
-                <span className="font-bold">{item.name}</span>
+                <span className="font-bold">
+                  <span className="hidden sm:inline">{item.name}</span>
+                  <span className="sm:hidden">{SHOP_SHORT[key] || item.name}</span>
+                </span>
                 <span className={`flex items-center gap-1 ${canAfford ? 'text-gold-accent/70' : 'text-text-dim/30'}`}>
                   {isFree ? 'FREE' : <><img src="/warisk-coin.png" alt="W" className="w-3 h-3 sm:w-4 sm:h-4 inline-block" />{item.cost}</>}
                 </span>
