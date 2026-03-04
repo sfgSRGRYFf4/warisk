@@ -298,7 +298,7 @@ function NewsTicker({ extraHeadlines = [] }) {
             style={{ '--ticker-duration': `${speed}s` }}
           >
             {doubled.map((headline, i) => (
-              <span key={i} className="text-[10px] text-red-400/80 px-4">
+              <span key={`${i}-${headline.slice(0, 20)}`} className="text-[10px] text-red-400/80 px-4">
                 {headline} <span className="text-red-enemy/30 mx-2">│</span>
               </span>
             ))}
@@ -1978,17 +1978,19 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
             warisk: prev.warisk - cost,
             freeNuke: false,
             totalNukes: prev.totalNukes + 1,
+            conqueredCount: prev.territories[id].owner === 'enemy' ? prev.conqueredCount + 1 : prev.conqueredCount,
             territories: {
               ...prev.territories,
               [id]: {
                 ...prev.territories[id],
-                troops: 0,
+                troops: 1,
+                owner: 'player',
                 shield: false,
                 building: null,
                 irradiated: 3,
               },
             },
-            terminalLog: addTerminalEntry(prev.terminalLog, 'player', `[T${String(prev.turn).padStart(2,'0')} STRIKE] ☢ NUCLEAR STRIKE on ${territory.name}: ${troopsBefore} troops eliminated`),
+            terminalLog: addTerminalEntry(prev.terminalLog, 'player', `[T${String(prev.turn).padStart(2,'0')} STRIKE] ☢ NUCLEAR STRIKE on ${territory.name}: ${troopsBefore} troops eliminated — CONQUERED!`),
           }))
           showFeedback(`NUCLEAR STRIKE on ${territory.name}! -${troopsBefore} troops. Irradiated for 3 turns. "Democracy has been delivered."`)
           SFX.nuke()
@@ -2169,10 +2171,10 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
     // 4. Enemy counter-attack: LOWERED threshold — attack when troops > target troops (was +2)
     for (const [id, ter] of Object.entries(t)) {
       if (ter.owner !== 'enemy' || !ter.attackable || ter.troops < 3) continue
-      // Smarter targeting: prioritize weakest player territory
+      // Smarter targeting: prioritize weakest player territory (skip already-zeroed targets)
       const weakTargets = (ter.neighbors || []).filter(nId => {
         const n = t[nId]
-        return n && n.owner === 'player' && ter.troops > n.troops
+        return n && n.owner === 'player' && n.troops > 0 && ter.troops > n.troops
       })
       if (weakTargets.length === 0) continue
       // Sort by fewest troops (target weakest)
@@ -2626,6 +2628,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
 }
 
 function DefeatScreen({ game, onMenu, onReplay }) {
+  const conquered = Object.values(game.territories).filter(t => t.attackable && t.owner === 'player').length
   return (
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
       <div className="absolute inset-0 opacity-10">
@@ -2656,7 +2659,7 @@ function DefeatScreen({ game, onMenu, onReplay }) {
           <div className="space-y-2 text-sm text-text-dim">
             <p>The United States has been overrun.</p>
             <p className="text-red-400 italic">"We came, we saw, we got our butts kicked."</p>
-            <p className="text-[10px] mt-4 opacity-60">Turn {game.turn} │ Territories liberated: {game.conqueredCount}</p>
+            <p className="text-[10px] mt-4 opacity-60">Turn {game.turn} │ Territories liberated: {conquered}</p>
           </div>
         </div>
 
@@ -2676,7 +2679,7 @@ function DefeatScreen({ game, onMenu, onReplay }) {
           <button
             onClick={() => {
               const joke = pickRandom(DEFEAT_JOKES)
-              const text = `🇺🇸 I lost the homeland on WARISK.FUN...\n\nLiberated ${game.conqueredCount}/${TOTAL_ATTACKABLE} in ${game.turn} turns before falling.\n\n"${joke}"\n\nPlay free: warisk.fun`
+              const text = `🇺🇸 I lost the homeland on WARISK.FUN...\n\nLiberated ${conquered}/${TOTAL_ATTACKABLE} in ${game.turn} turns before falling.\n\n"${joke}"\n\nPlay free: warisk.fun`
               window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank')
             }}
             className="border border-red-enemy/40 bg-red-enemy/10 text-red-400 px-6 py-2 text-xs tracking-widest uppercase hover:bg-red-enemy/20 transition-all cursor-pointer"
@@ -2690,6 +2693,7 @@ function DefeatScreen({ game, onMenu, onReplay }) {
 }
 
 function VictoryScreen({ game, onMenu, onReplay }) {
+  const conquered = Object.values(game.territories).filter(t => t.attackable && t.owner === 'player').length
   const rank = getTitle(game.turn)
   const starsStr = '★'.repeat(rank.stars) + '☆'.repeat(5 - rank.stars)
 
@@ -2731,7 +2735,7 @@ function VictoryScreen({ game, onMenu, onReplay }) {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between gap-8">
               <span className="text-text-dim">Countries liberated:</span>
-              <span>{game.conqueredCount}/{TOTAL_ATTACKABLE}</span>
+              <span>{conquered}/{TOTAL_ATTACKABLE}</span>
             </div>
             <div className="flex justify-between gap-8">
               <span className="text-text-dim">Turns:</span>
