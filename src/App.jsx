@@ -2485,18 +2485,27 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
               ENEMY...
             </span>
           ) : (
-            <button
-              onClick={handleNextPhase}
-              disabled={!!diceData}
-              className={`text-xs sm:text-sm border-2 px-3 sm:px-6 py-1.5 transition-all tracking-wider font-bold next-phase-btn btn-war whitespace-nowrap ${
-                diceData
-                  ? 'border-gray-neutral/30 bg-gray-neutral/10 text-text-dim/40 cursor-not-allowed'
-                  : 'border-green-500/50 bg-green-500/15 text-green-400 hover:bg-green-500/25 hover:border-green-500/70 cursor-pointer'
-              }`}
-            >
-              <span className="hidden sm:inline">{game.phase === 'fortify' ? 'END TURN ▸' : 'NEXT PHASE ▸'}</span>
-              <span className="sm:hidden">{game.phase === 'fortify' ? 'END ▸' : 'NEXT ▸'}</span>
-            </button>
+            <div className="flex items-center gap-1.5">
+              {/* ABORT — only visible on mobile here */}
+              <button
+                onClick={onMenu}
+                className="sm:hidden flex-shrink-0 text-xs border border-red-enemy/30 text-red-enemy/60 px-2 py-1.5 hover:bg-red-enemy/10 transition-all cursor-pointer"
+              >
+                ✕
+              </button>
+              <button
+                onClick={handleNextPhase}
+                disabled={!!diceData}
+                className={`text-xs sm:text-sm border-2 px-3 sm:px-6 py-1.5 transition-all tracking-wider font-bold next-phase-btn btn-war whitespace-nowrap ${
+                  diceData
+                    ? 'border-gray-neutral/30 bg-gray-neutral/10 text-text-dim/40 cursor-not-allowed'
+                    : 'border-green-500/50 bg-green-500/15 text-green-400 hover:bg-green-500/25 hover:border-green-500/70 cursor-pointer'
+                }`}
+              >
+                <span className="hidden sm:inline">{game.phase === 'fortify' ? 'END TURN ▸' : 'NEXT PHASE ▸'}</span>
+                <span className="sm:hidden">{game.phase === 'fortify' ? 'END ▸' : 'NEXT ▸'}</span>
+              </button>
+            </div>
           )}
         </div>
 
@@ -2530,11 +2539,11 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
             )
           })}
 
-          {/* Spacer + abort */}
+          {/* Spacer + ABORT (desktop only — mobile ABORT is in phase row) */}
           <div className="flex-1" />
           <button
             onClick={onMenu}
-            className="flex-shrink-0 text-xs sm:text-base border border-red-enemy/30 text-red-enemy/60 px-3 sm:px-6 py-2 sm:py-3.5 hover:bg-red-enemy/10 transition-all cursor-pointer"
+            className="hidden sm:block flex-shrink-0 text-xs sm:text-base border border-red-enemy/30 text-red-enemy/60 px-3 sm:px-6 py-2 sm:py-3.5 hover:bg-red-enemy/10 transition-all cursor-pointer"
           >
             ABORT
           </button>
