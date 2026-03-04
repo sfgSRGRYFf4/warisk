@@ -542,10 +542,18 @@ const WORLD_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.jso
 function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerritoryClick, onAllyClick, attackFrom, fortifyFrom, dragGuardRef, highlightedTargets }) {
   const [worldFeatures, setWorldFeatures] = useState([])
   const [centroids, setCentroids] = useState({})
-  const [zoom, setZoom] = useState(1.1)
-  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(() => window.innerWidth < 640 ? 1.5 : 1.1)
+  const [pan, setPan] = useState(() => window.innerWidth < 640 ? { x: 20, y: -15 } : { x: 0, y: 0 })
   const containerRef = useRef(null)
   const dragRef = useRef({ dragging: false, wasDragging: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0 })
+  const tooltipTimerRef = useRef(null)
+
+  // Touch tap → show tooltip briefly (mobile has no mouseover)
+  const handleTouchTap = useCallback((info) => {
+    if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current)
+    setHoveredTerritory(info)
+    tooltipTimerRef.current = setTimeout(() => setHoveredTerritory(null), 1800)
+  }, [setHoveredTerritory])
 
   // Projection: Natural Earth → fits nicely in SVG
   const projection = useMemo(() => {
@@ -863,6 +871,7 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
                 onClick={() => { if (dragGuardRef?.current?.wasDragging) return; onTerritoryClick(mapping.id) }}
                 onMouseEnter={() => setHoveredTerritory({ id: mapping.id, type: 'territory', ...t })}
                 onMouseLeave={() => setHoveredTerritory(null)}
+                onTouchEnd={(e) => { if (!dragGuardRef?.current?.wasDragging) { e.stopPropagation(); handleTouchTap({ id: mapping.id, type: 'territory', ...t }) } }}
               />
             )
           }
@@ -877,6 +886,7 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
                 className="cursor-default"
                 onMouseEnter={() => n && setHoveredTerritory({ id: mapping.id, type: 'neutral', ...n })}
                 onMouseLeave={() => setHoveredTerritory(null)}
+                onTouchEnd={(e) => { if (n) { e.stopPropagation(); handleTouchTap({ id: mapping.id, type: 'neutral', ...n }) } }}
               />
             )
           }
@@ -974,6 +984,7 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
               onClick={() => { if (dragGuardRef?.current?.wasDragging) return; onTerritoryClick(id) }}
               onMouseEnter={() => setHoveredTerritory({ id, type: 'territory', ...t })}
               onMouseLeave={() => setHoveredTerritory(null)}
+              onTouchEnd={(e) => { if (!dragGuardRef?.current?.wasDragging) { e.stopPropagation(); handleTouchTap({ id, type: 'territory', ...t }) } }}
             >
               {/* Label background */}
               <rect
@@ -1083,7 +1094,7 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
       {/* Zoom indicator */}
       {(zoom < 1.05 || zoom > 1.15) && (
         <div className="absolute top-2 right-2 z-30 bg-bg-card/80 border border-green-500/20 px-2 py-1 text-[9px] text-green-400">
-          ZOOM: {zoom.toFixed(1)}x │ Drag to pan │ <button onClick={() => { setZoom(1.1); setPan({ x: 0, y: 0 }) }} className="text-text-dim hover:text-green-400 cursor-pointer">RESET</button>
+          ZOOM: {zoom.toFixed(1)}x │ <span className="hidden sm:inline">Drag to pan │ </span><span className="sm:hidden">Pinch/drag │ </span><button onClick={() => { setZoom(window.innerWidth < 640 ? 1.5 : 1.1); setPan(window.innerWidth < 640 ? { x: 20, y: -15 } : { x: 0, y: 0 }) }} className="text-text-dim hover:text-green-400 cursor-pointer">RESET</button>
         </div>
       )}
 
@@ -1093,10 +1104,10 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
         const t = live || hoveredTerritory
         return (
           <div
-            className="absolute z-30 pointer-events-none bg-bg-card/95 border border-green-500/30 px-5 py-4 text-base max-w-[380px]"
+            className="absolute z-30 pointer-events-none bg-bg-card/95 border border-green-500/30 px-3 py-2 sm:px-5 sm:py-4 text-xs sm:text-base max-w-[90vw] sm:max-w-[380px]"
             style={{
               left: '50%',
-              bottom: '12px',
+              bottom: '8px',
               transform: 'translateX(-50%)',
             }}
           >
@@ -1390,7 +1401,7 @@ function GameTerminal({ log }) {
   }, [log.length])
 
   return (
-    <div className="relative z-10 border-t border-green-500/20 bg-black/80 flex-shrink-0" style={{ height: '70px' }}>
+    <div className="relative z-10 border-t border-green-500/20 bg-black/80 flex-shrink-0 hidden sm:block" style={{ height: '70px' }}>
       <div
         ref={scrollRef}
         className="game-terminal overflow-y-auto px-4 py-2 h-full"
@@ -2320,22 +2331,31 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       <NewsTicker extraHeadlines={game.newsQueue} />
 
       {/* Top bar — live data */}
-      <div className="relative z-10 flex items-center justify-between px-4 py-1 border-b border-green-500/20 bg-bg-card/80">
-        <div className="text-xs text-text-dim tracking-wider uppercase flex items-center gap-2">
-          <span className="text-green-400">◆</span> OPERATION ACTIVE │ {conquered}/{TOTAL_ATTACKABLE} LIBERATED
-        </div>
-        <div className="text-sm text-gold-accent font-bold flex items-center gap-1.5">
-          <img src="/warisk-coin.png" alt="W" className="w-4 h-4 inline-block" /> {game.warisk} (+{game.doubleIncome ? wariskPerSec * 2 : wariskPerSec}/s){game.doubleIncome ? ' x2!' : ''}
-        </div>
-        <div className="text-xs text-text-dim flex items-center gap-2">
-          TURN {game.turn} │ PHASE: {PHASE_LABELS[game.phase]}
-          <button
-            onClick={toggleMusic}
-            className="text-xs border border-gray-neutral/30 px-2 py-0.5 hover:bg-gray-neutral/10 cursor-pointer transition-all"
-            title={musicOn ? 'Mute music' : 'Play music'}
-          >
-            {musicOn ? '♪ ON' : '♪ OFF'}
-          </button>
+      <div className="relative z-10 border-b border-green-500/20 bg-bg-card/80 px-3 py-1">
+        {/* Row 1: status + money */}
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-text-dim tracking-wider uppercase flex items-center gap-1.5">
+            <span className="text-green-400">◆</span>
+            <span className="hidden sm:inline">OPERATION ACTIVE │ </span>
+            {conquered}/{TOTAL_ATTACKABLE} LIBERATED
+          </div>
+          <div className="text-sm text-gold-accent font-bold flex items-center gap-1">
+            <img src="/warisk-coin.png" alt="W" className="w-4 h-4 inline-block" />
+            {game.warisk}
+            <span className="text-xs text-gold-accent/60">(+{game.doubleIncome ? wariskPerSec * 2 : wariskPerSec}/s{game.doubleIncome ? ' x2!' : ''})</span>
+          </div>
+          <div className="text-xs text-text-dim flex items-center gap-1.5">
+            <span className="hidden sm:inline">TURN {game.turn} │ </span>
+            <span className="sm:hidden">T{game.turn} │ </span>
+            {PHASE_LABELS[game.phase]}
+            <button
+              onClick={toggleMusic}
+              className="text-xs border border-gray-neutral/30 px-1.5 py-0.5 hover:bg-gray-neutral/10 cursor-pointer transition-all"
+              title={musicOn ? 'Mute music' : 'Play music'}
+            >
+              {musicOn ? '♪' : '♪'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -2370,7 +2390,8 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       {game.phase === 'build' && !selectedItem && (
         <div className="relative z-20 text-center py-1 bg-green-500/10 border-b border-green-500/20">
           <span className="text-xs text-green-400">
-            ▸ Buy items below, then click YOUR territory to place them. Click NEXT PHASE when done.
+            <span className="hidden sm:inline">▸ Buy items below, then click YOUR territory to place them. Click NEXT PHASE when done.</span>
+            <span className="sm:hidden">▸ Buy below → tap YOUR territory</span>
           </span>
         </div>
       )}
@@ -2379,7 +2400,8 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       {game.phase === 'strike' && !selectedItem && (
         <div className="relative z-20 text-center py-1 bg-red-enemy/10 border-b border-red-enemy/20">
           <span className="text-xs text-red-400">
-            ▸ Buy weapons below, then click an ENEMY territory to strike. Click NEXT PHASE when done.
+            <span className="hidden sm:inline">▸ Buy weapons below, then click an ENEMY territory to strike. Click NEXT PHASE when done.</span>
+            <span className="sm:hidden">▸ Buy weapon → tap ENEMY territory</span>
           </span>
         </div>
       )}
@@ -2389,8 +2411,8 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         <div className="relative z-20 text-center py-1 bg-gold-accent/10 border-b border-gold-accent/20">
           <span className="text-xs text-gold-accent">
             {attackFrom
-              ? `▸ Attacking from ${game.territories[attackFrom]?.name} — click adjacent enemy territory │`
-              : '▸ Click one of YOUR territories to attack from (or NEXT PHASE to skip)'}
+              ? <><span className="hidden sm:inline">{`▸ Attacking from ${game.territories[attackFrom]?.name} — click adjacent enemy territory │`}</span><span className="sm:hidden">{`▸ From ${game.territories[attackFrom]?.name} → tap enemy`}</span></>
+              : <><span className="hidden sm:inline">▸ Click one of YOUR territories to attack from (or NEXT PHASE to skip)</span><span className="sm:hidden">▸ Tap YOUR territory to attack</span></>}
           </span>
           {attackFrom && (
             <button
@@ -2408,8 +2430,8 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         <div className="relative z-20 text-center py-1 bg-blue-player/10 border-b border-blue-player/20">
           <span className="text-xs text-blue-player">
             {fortifyFrom
-              ? `▸ Moving from ${game.territories[fortifyFrom]?.name} — click adjacent friendly territory │`
-              : '▸ Click a territory to move troops from (or END TURN to skip)'}
+              ? <><span className="hidden sm:inline">{`▸ Moving from ${game.territories[fortifyFrom]?.name} — click adjacent friendly territory │`}</span><span className="sm:hidden">{`▸ From ${game.territories[fortifyFrom]?.name} → tap friendly`}</span></>
+              : <><span className="hidden sm:inline">▸ Click a territory to move troops from (or END TURN to skip)</span><span className="sm:hidden">▸ Tap territory to move troops</span></>}
           </span>
           {fortifyFrom && (
             <button
@@ -2443,36 +2465,37 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       {/* Action bar — redesigned bigger */}
       <div className="relative z-10 flex-shrink-0 border-t-2 border-green-500/40 bg-bg-card/95 action-bar-glow py-0.5">
         {/* Phase indicators */}
-        <div className="flex items-center justify-between px-4 pt-1 pb-0.5">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between px-2 sm:px-4 pt-1 pb-0.5">
+          <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto">
             {PHASE_ORDER.map(p => (
               <span
                 key={p}
-                className={`text-sm tracking-wider uppercase transition-all duration-300 ${
+                className={`text-xs sm:text-sm tracking-wider uppercase transition-all duration-300 whitespace-nowrap ${
                   p === game.phase
                     ? 'text-green-400 phase-active font-bold'
                     : 'text-text-dim/40'
                 }`}
               >
-                {p === game.phase ? '◆' : '◇'} {PHASE_LABELS[p]}
+                {p === game.phase ? '◆' : '◇'} <span className="hidden sm:inline">{PHASE_LABELS[p]}</span><span className="sm:hidden">{PHASE_LABELS[p].split(' ')[0].slice(0,3)}</span>
               </span>
             ))}
           </div>
           {game.phase === 'enemy_turn' ? (
-            <span className="text-lg text-red-enemy/60 px-8 py-3 tracking-wider animate-pulse font-bold">
-              ENEMY TURN...
+            <span className="text-sm sm:text-lg text-red-enemy/60 px-3 sm:px-8 py-1 sm:py-3 tracking-wider animate-pulse font-bold whitespace-nowrap">
+              ENEMY...
             </span>
           ) : (
             <button
               onClick={handleNextPhase}
               disabled={!!diceData}
-              className={`text-sm border-2 px-6 py-1.5 transition-all tracking-wider font-bold next-phase-btn btn-war ${
+              className={`text-xs sm:text-sm border-2 px-3 sm:px-6 py-1.5 transition-all tracking-wider font-bold next-phase-btn btn-war whitespace-nowrap ${
                 diceData
                   ? 'border-gray-neutral/30 bg-gray-neutral/10 text-text-dim/40 cursor-not-allowed'
                   : 'border-green-500/50 bg-green-500/15 text-green-400 hover:bg-green-500/25 hover:border-green-500/70 cursor-pointer'
               }`}
             >
-              {game.phase === 'fortify' ? 'END TURN ▸' : 'NEXT PHASE ▸'}
+              <span className="hidden sm:inline">{game.phase === 'fortify' ? 'END TURN ▸' : 'NEXT PHASE ▸'}</span>
+              <span className="sm:hidden">{game.phase === 'fortify' ? 'END ▸' : 'NEXT ▸'}</span>
             </button>
           )}
         </div>
@@ -2481,7 +2504,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         <div className="mx-4 h-px bg-green-500/15" />
 
         {/* Shop items for current phase */}
-        <div className="flex items-center gap-3 px-4 py-1 overflow-x-auto">
+        <div className="flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-1 overflow-x-auto">
           {phaseItems.map(([key, item]) => {
             const effectiveCost = getEffectiveCost(key)
             const canAfford = game.warisk >= effectiveCost
@@ -2491,7 +2514,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
               <button
                 key={key}
                 onClick={() => handleShopClick(key)}
-                className={`flex-shrink-0 border px-6 py-3.5 text-base transition-all cursor-pointer flex items-center gap-3 btn-war ${
+                className={`flex-shrink-0 border px-3 sm:px-6 py-2 sm:py-3.5 text-xs sm:text-base transition-all cursor-pointer flex items-center gap-1.5 sm:gap-3 btn-war ${
                   isSelected
                     ? 'border-gold-accent/70 bg-gold-accent/20 text-gold-accent'
                     : canAfford
@@ -2501,7 +2524,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
               >
                 <span className="font-bold">{item.name}</span>
                 <span className={`flex items-center gap-1 ${canAfford ? 'text-gold-accent/70' : 'text-text-dim/30'}`}>
-                  {isFree ? 'FREE' : <><img src="/warisk-coin.png" alt="W" className="w-4 h-4 inline-block" />{item.cost}</>}
+                  {isFree ? 'FREE' : <><img src="/warisk-coin.png" alt="W" className="w-3 h-3 sm:w-4 sm:h-4 inline-block" />{item.cost}</>}
                 </span>
               </button>
             )
@@ -2511,7 +2534,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           <div className="flex-1" />
           <button
             onClick={onMenu}
-            className="flex-shrink-0 text-base border border-red-enemy/30 text-red-enemy/60 px-6 py-3.5 hover:bg-red-enemy/10 transition-all cursor-pointer"
+            className="flex-shrink-0 text-xs sm:text-base border border-red-enemy/30 text-red-enemy/60 px-3 sm:px-6 py-2 sm:py-3.5 hover:bg-red-enemy/10 transition-all cursor-pointer"
           >
             ABORT
           </button>
