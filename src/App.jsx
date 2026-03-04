@@ -552,8 +552,8 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
   const [worldFeatures, setWorldFeatures] = useState([])
   const [centroids, setCentroids] = useState({})
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
-  const [zoom, setZoom] = useState(() => isMobile ? 1.7 : 1.1)
-  const [pan, setPan] = useState(() => isMobile ? { x: -50, y: -10 } : { x: 0, y: 0 })
+  const [zoom, setZoom] = useState(() => isMobile ? 1.5 : 1.1)
+  const [pan, setPan] = useState(() => isMobile ? { x: -30, y: -5 } : { x: 0, y: 0 })
   const containerRef = useRef(null)
   const dragRef = useRef({ dragging: false, wasDragging: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0 })
   const tooltipTimerRef = useRef(null)
@@ -564,6 +564,10 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
     setHoveredTerritory(info)
     tooltipTimerRef.current = setTimeout(() => setHoveredTerritory(null), 1800)
   }, [setHoveredTerritory])
+
+  useEffect(() => {
+    return () => { if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current) }
+  }, [])
 
   // Projection: Natural Earth → fits nicely in SVG
   const projection = useMemo(() => {
@@ -1102,9 +1106,9 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
       </svg>
 
       {/* Zoom indicator */}
-      {(Math.abs(zoom - (isMobile ? 1.7 : 1.1)) > 0.05) && (
+      {(Math.abs(zoom - (isMobile ? 1.5 : 1.1)) > 0.05) && (
         <div className="absolute top-2 right-2 z-30 bg-bg-card/80 border border-green-500/20 px-2 py-1 text-[9px] text-green-400">
-          ZOOM: {zoom.toFixed(1)}x │ <span className="hidden sm:inline">Drag to pan │ </span><span className="sm:hidden">Pinch/drag │ </span><button onClick={() => { setZoom(isMobile ? 1.7 : 1.1); setPan(isMobile ? { x: -50, y: -10 } : { x: 0, y: 0 }) }} className="text-text-dim hover:text-green-400 cursor-pointer">RESET</button>
+          ZOOM: {zoom.toFixed(1)}x │ <span className="hidden sm:inline">Drag to pan │ </span><span className="sm:hidden">Pinch/drag │ </span><button onClick={() => { setZoom(isMobile ? 1.5 : 1.1); setPan(isMobile ? { x: -30, y: -5 } : { x: 0, y: 0 }) }} className="text-text-dim hover:text-green-400 cursor-pointer">RESET</button>
         </div>
       )}
 
@@ -1411,7 +1415,7 @@ function GameTerminal({ log }) {
   }, [log.length])
 
   return (
-    <div className="relative z-10 border-t border-green-500/20 bg-black/80 flex-shrink-0 hidden sm:block" style={{ height: '70px' }}>
+    <div className="relative z-10 border-t border-green-500/20 bg-black/80 flex-shrink-0" style={{ height: '70px' }}>
       <div
         ref={scrollRef}
         className="game-terminal overflow-y-auto px-4 py-2 h-full"
