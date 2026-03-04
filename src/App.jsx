@@ -2364,10 +2364,15 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
             {PHASE_LABELS[game.phase]}
             <button
               onClick={toggleMusic}
-              className="text-xs border border-gray-neutral/30 px-1.5 py-0.5 hover:bg-gray-neutral/10 cursor-pointer transition-all"
+              className={`text-xs border px-2 py-0.5 cursor-pointer transition-all font-bold ${
+                musicOn
+                  ? 'border-green-500/60 text-green-400 hover:bg-green-500/10'
+                  : 'border-gray-neutral/20 text-text-dim/40 hover:bg-gray-neutral/10'
+              }`}
               title={musicOn ? 'Mute music' : 'Play music'}
             >
-              {musicOn ? '♪' : '♪'}
+              {musicOn ? '♫' : '♪'}
+              <span className="hidden sm:inline ml-1 text-[10px] tracking-widest">{musicOn ? 'ON' : 'OFF'}</span>
             </button>
           </div>
         </div>
