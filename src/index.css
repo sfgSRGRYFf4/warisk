@@ -171,3 +171,23 @@ body {
 .terminal-line {
   animation: terminal-entry 0.2s ease-out;
 }
+
+/* Event popup entrance */
+@keyframes event-slide-in {
+  from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.event-popup-enter {
+  animation: event-slide-in 0.3s ease-out;
+}
+
+/* Half-cost discount badge pulse */
+@keyframes discount-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.discount-badge {
+  animation: discount-pulse 1s ease-in-out infinite;
+}

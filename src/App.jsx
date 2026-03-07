@@ -42,74 +42,143 @@ const SFX = (() => {
       o.type = 'sine'; o.frequency.value = 800
       g.gain.setValueAtTime(0.08, c.currentTime)
       g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.08)
-      o.connect(g).connect(c.destination)
-      o.start(); o.stop(c.currentTime + 0.08)
+      o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.08)
+      const o2 = c.createOscillator(), g2 = c.createGain()
+      o2.type = 'triangle'; o2.frequency.value = 2400
+      g2.gain.setValueAtTime(0.03, c.currentTime)
+      g2.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.05)
+      o2.connect(g2).connect(c.destination); o2.start(); o2.stop(c.currentTime + 0.05)
     }),
     money: () => play(c => {
       const o = c.createOscillator(), g = c.createGain()
       o.type = 'sine'; o.frequency.setValueAtTime(600, c.currentTime)
       o.frequency.exponentialRampToValueAtTime(1200, c.currentTime + 0.12)
-      g.gain.setValueAtTime(0.1, c.currentTime)
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.15)
-      o.connect(g).connect(c.destination)
-      o.start(); o.stop(c.currentTime + 0.15)
+      g.gain.setValueAtTime(0.08, c.currentTime)
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.2)
+      o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.2)
+      const o2 = c.createOscillator(), g2 = c.createGain()
+      o2.type = 'sine'; o2.frequency.value = 2400
+      g2.gain.setValueAtTime(0.04, c.currentTime + 0.05)
+      g2.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.25)
+      o2.connect(g2).connect(c.destination); o2.start(c.currentTime + 0.05); o2.stop(c.currentTime + 0.25)
+      const o3 = c.createOscillator(), g3 = c.createGain()
+      o3.type = 'sine'; o3.frequency.value = 3600
+      g3.gain.setValueAtTime(0.02, c.currentTime + 0.08)
+      g3.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3)
+      o3.connect(g3).connect(c.destination); o3.start(c.currentTime + 0.08); o3.stop(c.currentTime + 0.3)
     }),
     explosion: () => play(c => {
-      const buf = c.createBuffer(1, c.sampleRate * 0.3, c.sampleRate)
+      const buf = c.createBuffer(1, c.sampleRate * 0.4, c.sampleRate)
       const data = buf.getChannelData(0)
       for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 2)
       const s = c.createBufferSource(), g = c.createGain()
-      s.buffer = buf
-      g.gain.setValueAtTime(0.15, c.currentTime)
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3)
-      s.connect(g).connect(c.destination)
-      s.start()
+      s.buffer = buf; g.gain.setValueAtTime(0.15, c.currentTime)
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.4)
+      s.connect(g).connect(c.destination); s.start()
+      const boom = c.createOscillator(), bg = c.createGain()
+      boom.type = 'sine'; boom.frequency.setValueAtTime(80, c.currentTime)
+      boom.frequency.exponentialRampToValueAtTime(30, c.currentTime + 0.3)
+      bg.gain.setValueAtTime(0.12, c.currentTime)
+      bg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.35)
+      boom.connect(bg).connect(c.destination); boom.start(); boom.stop(c.currentTime + 0.35)
+      const dbuf = c.createBuffer(1, c.sampleRate * 0.15, c.sampleRate)
+      const dd = dbuf.getChannelData(0)
+      for (let i = 0; i < dd.length; i++) dd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / dd.length, 3)
+      const ds = c.createBufferSource(), dg = c.createGain(), df = c.createBiquadFilter()
+      ds.buffer = dbuf; df.type = 'highpass'; df.frequency.value = 2000
+      dg.gain.setValueAtTime(0.06, c.currentTime + 0.2)
+      dg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.4)
+      ds.connect(df).connect(dg).connect(c.destination); ds.start(c.currentTime + 0.2)
     }),
     nuke: () => play(c => {
-      const buf = c.createBuffer(1, c.sampleRate * 0.8, c.sampleRate)
+      const buf = c.createBuffer(1, c.sampleRate * 1.2, c.sampleRate)
       const data = buf.getChannelData(0)
       for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 1.5)
       const s = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter()
       s.buffer = buf; f.type = 'lowpass'; f.frequency.setValueAtTime(2000, c.currentTime)
-      f.frequency.exponentialRampToValueAtTime(100, c.currentTime + 0.8)
+      f.frequency.exponentialRampToValueAtTime(60, c.currentTime + 1.0)
       g.gain.setValueAtTime(0.2, c.currentTime)
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.8)
-      s.connect(f).connect(g).connect(c.destination)
-      s.start()
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 1.2)
+      s.connect(f).connect(g).connect(c.destination); s.start()
+      const sub = c.createOscillator(), sg = c.createGain()
+      sub.type = 'sine'; sub.frequency.value = 35
+      sg.gain.setValueAtTime(0.15, c.currentTime)
+      sg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 1.0)
+      sub.connect(sg).connect(c.destination); sub.start(); sub.stop(c.currentTime + 1.0)
+      const hum = c.createOscillator(), hg = c.createGain()
+      hum.type = 'sawtooth'; hum.frequency.value = 60
+      hg.gain.setValueAtTime(0, c.currentTime + 0.6)
+      hg.gain.linearRampToValueAtTime(0.04, c.currentTime + 0.8)
+      hg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 1.5)
+      hum.connect(hg).connect(c.destination); hum.start(c.currentTime + 0.6); hum.stop(c.currentTime + 1.5)
     }),
     victory: () => play(c => {
       const notes = [523, 659, 784, 1047]
       notes.forEach((freq, i) => {
         const o = c.createOscillator(), g = c.createGain()
-        o.type = 'square'; o.frequency.value = freq
-        g.gain.setValueAtTime(0.06, c.currentTime + i * 0.15)
-        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + i * 0.15 + 0.3)
-        o.connect(g).connect(c.destination)
-        o.start(c.currentTime + i * 0.15); o.stop(c.currentTime + i * 0.15 + 0.3)
+        o.type = 'sawtooth'; o.frequency.value = freq
+        const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = 2500
+        g.gain.setValueAtTime(0.05, c.currentTime + i * 0.15)
+        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + i * 0.15 + 0.4)
+        o.connect(fl).connect(g).connect(c.destination)
+        o.start(c.currentTime + i * 0.15); o.stop(c.currentTime + i * 0.15 + 0.4)
       })
+      ;[659, 784, 1047].forEach(freq => {
+        const o = c.createOscillator(), g = c.createGain()
+        o.type = 'sine'; o.frequency.value = freq
+        g.gain.setValueAtTime(0.03, c.currentTime + 0.6)
+        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 1.2)
+        o.connect(g).connect(c.destination); o.start(c.currentTime + 0.6); o.stop(c.currentTime + 1.2)
+      })
+      const buf = c.createBuffer(1, c.sampleRate * 0.8, c.sampleRate)
+      const data = buf.getChannelData(0)
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.3 * (1 - Math.pow(i / data.length, 0.5))
+      const bs = c.createBufferSource(), bg = c.createGain(), bf = c.createBiquadFilter()
+      bs.buffer = buf; bf.type = 'bandpass'; bf.frequency.value = 1200; bf.Q.value = 0.3
+      bg.gain.setValueAtTime(0.05, c.currentTime + 0.4)
+      bg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 1.0)
+      bs.connect(bf).connect(bg).connect(c.destination); bs.start(c.currentTime + 0.4)
     }),
     hit: () => play(c => {
       const o = c.createOscillator(), g = c.createGain()
-      o.type = 'sawtooth'; o.frequency.setValueAtTime(300, c.currentTime)
-      o.frequency.exponentialRampToValueAtTime(80, c.currentTime + 0.15)
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(400, c.currentTime)
+      o.frequency.exponentialRampToValueAtTime(60, c.currentTime + 0.12)
       g.gain.setValueAtTime(0.1, c.currentTime)
       g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.15)
-      o.connect(g).connect(c.destination)
-      o.start(); o.stop(c.currentTime + 0.15)
+      o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.15)
+      const o2 = c.createOscillator(), g2 = c.createGain()
+      o2.type = 'triangle'; o2.frequency.value = 1800
+      g2.gain.setValueAtTime(0.04, c.currentTime)
+      g2.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.08)
+      o2.connect(g2).connect(c.destination); o2.start(); o2.stop(c.currentTime + 0.08)
+      const o3 = c.createOscillator(), g3 = c.createGain()
+      o3.type = 'sine'; o3.frequency.setValueAtTime(180, c.currentTime + 0.05)
+      o3.frequency.exponentialRampToValueAtTime(100, c.currentTime + 0.15)
+      g3.gain.setValueAtTime(0.05, c.currentTime + 0.05)
+      g3.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.15)
+      o3.connect(g3).connect(c.destination); o3.start(c.currentTime + 0.05); o3.stop(c.currentTime + 0.15)
     }),
     conquer: () => play(c => {
       const notes = [440, 554, 659]
       notes.forEach((freq, i) => {
         const o = c.createOscillator(), g = c.createGain()
-        o.type = 'sine'; o.frequency.value = freq
-        g.gain.setValueAtTime(0.08, c.currentTime + i * 0.1)
-        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + i * 0.1 + 0.25)
-        o.connect(g).connect(c.destination)
-        o.start(c.currentTime + i * 0.1); o.stop(c.currentTime + i * 0.1 + 0.25)
+        o.type = 'sawtooth'; o.frequency.value = freq
+        const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = 2000
+        g.gain.setValueAtTime(0.05, c.currentTime + i * 0.1)
+        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + i * 0.1 + 0.35)
+        o.connect(fl).connect(g).connect(c.destination)
+        o.start(c.currentTime + i * 0.1); o.stop(c.currentTime + i * 0.1 + 0.35)
       })
+      const buf = c.createBuffer(1, c.sampleRate * 0.4, c.sampleRate)
+      const data = buf.getChannelData(0)
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 1.5) * 0.3
+      const bs = c.createBufferSource(), bg = c.createGain(), bf = c.createBiquadFilter()
+      bs.buffer = buf; bf.type = 'bandpass'; bf.frequency.value = 1500; bf.Q.value = 0.5
+      bg.gain.setValueAtTime(0.04, c.currentTime + 0.2)
+      bg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5)
+      bs.connect(bf).connect(bg).connect(c.destination); bs.start(c.currentTime + 0.2)
     }),
     warStart: () => play(c => {
-      // Low rumble
       const buf = c.createBuffer(1, c.sampleRate * 0.8, c.sampleRate)
       const data = buf.getChannelData(0)
       for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 1.2)
@@ -118,7 +187,6 @@ const SFX = (() => {
       g.gain.setValueAtTime(0.12, c.currentTime)
       g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.8)
       s.connect(f).connect(g).connect(c.destination); s.start()
-      // Jet whoosh
       const jet = c.createOscillator(), jg = c.createGain(), jf = c.createBiquadFilter()
       jet.type = 'sawtooth'; jet.frequency.setValueAtTime(200, c.currentTime + 0.1)
       jet.frequency.exponentialRampToValueAtTime(2000, c.currentTime + 0.5)
@@ -127,7 +195,6 @@ const SFX = (() => {
       jg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.6)
       jet.connect(jf).connect(jg).connect(c.destination)
       jet.start(c.currentTime + 0.1); jet.stop(c.currentTime + 0.6)
-      // Distant explosion
       const eb = c.createBuffer(1, c.sampleRate * 0.3, c.sampleRate)
       const ed = eb.getChannelData(0)
       for (let i = 0; i < ed.length; i++) ed[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / ed.length, 2)
@@ -138,56 +205,102 @@ const SFX = (() => {
       es.connect(ef).connect(eg).connect(c.destination); es.start(c.currentTime + 0.5)
     }),
     build: () => play(c => {
-      const o = c.createOscillator(), g = c.createGain()
-      o.type = 'square'; o.frequency.setValueAtTime(800, c.currentTime)
-      o.frequency.exponentialRampToValueAtTime(400, c.currentTime + 0.08)
-      g.gain.setValueAtTime(0.07, c.currentTime)
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.15)
-      o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.15)
-      // Wrench clink
-      const o2 = c.createOscillator(), g2 = c.createGain()
-      o2.type = 'sine'; o2.frequency.value = 1200
-      g2.gain.setValueAtTime(0.05, c.currentTime + 0.08)
-      g2.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.2)
-      o2.connect(g2).connect(c.destination); o2.start(c.currentTime + 0.08); o2.stop(c.currentTime + 0.2)
+      for (let i = 0; i < 3; i++) {
+        const o = c.createOscillator(), g = c.createGain()
+        o.type = 'square'; o.frequency.setValueAtTime(800 - i * 100, c.currentTime + i * 0.06)
+        o.frequency.exponentialRampToValueAtTime(400 - i * 50, c.currentTime + i * 0.06 + 0.04)
+        g.gain.setValueAtTime(0.05, c.currentTime + i * 0.06)
+        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + i * 0.06 + 0.05)
+        o.connect(g).connect(c.destination)
+        o.start(c.currentTime + i * 0.06); o.stop(c.currentTime + i * 0.06 + 0.05)
+      }
+      const chime = c.createOscillator(), cg = c.createGain()
+      chime.type = 'sine'; chime.frequency.value = 1400
+      cg.gain.setValueAtTime(0.06, c.currentTime + 0.2)
+      cg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.4)
+      chime.connect(cg).connect(c.destination); chime.start(c.currentTime + 0.2); chime.stop(c.currentTime + 0.4)
+      const ch2 = c.createOscillator(), cg2 = c.createGain()
+      ch2.type = 'sine'; ch2.frequency.value = 1760
+      cg2.gain.setValueAtTime(0.03, c.currentTime + 0.25)
+      cg2.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.4)
+      ch2.connect(cg2).connect(c.destination); ch2.start(c.currentTime + 0.25); ch2.stop(c.currentTime + 0.4)
     }),
     drone: () => play(c => {
       const o = c.createOscillator(), g = c.createGain()
       o.type = 'sawtooth'; o.frequency.setValueAtTime(600, c.currentTime)
       o.frequency.exponentialRampToValueAtTime(1800, c.currentTime + 0.15)
       g.gain.setValueAtTime(0.06, c.currentTime)
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.2)
-      o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.2)
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.25)
+      o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.25)
+      const prop = c.createOscillator(), pg = c.createGain()
+      prop.type = 'square'; prop.frequency.value = 120
+      const lfo = c.createOscillator(), lg = c.createGain()
+      lfo.type = 'square'; lfo.frequency.value = 30; lg.gain.value = 0.03
+      lfo.connect(lg).connect(pg.gain)
+      pg.gain.setValueAtTime(0.04, c.currentTime)
+      pg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.2)
+      prop.connect(pg).connect(c.destination)
+      prop.start(); lfo.start(); prop.stop(c.currentTime + 0.2); lfo.stop(c.currentTime + 0.2)
+      const dop = c.createOscillator(), dg = c.createGain()
+      dop.type = 'sine'; dop.frequency.setValueAtTime(1800, c.currentTime + 0.1)
+      dop.frequency.exponentialRampToValueAtTime(400, c.currentTime + 0.25)
+      dg.gain.setValueAtTime(0.03, c.currentTime + 0.1)
+      dg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.25)
+      dop.connect(dg).connect(c.destination); dop.start(c.currentTime + 0.1); dop.stop(c.currentTime + 0.25)
     }),
     missileSound: () => play(c => {
+      const wBuf = c.createBuffer(1, c.sampleRate * 0.15, c.sampleRate)
+      const wd = wBuf.getChannelData(0)
+      for (let i = 0; i < wd.length; i++) wd[i] = (Math.random() * 2 - 1) * 0.5
+      const ws = c.createBufferSource(), wg = c.createGain(), wf = c.createBiquadFilter()
+      ws.buffer = wBuf; wf.type = 'bandpass'; wf.frequency.setValueAtTime(500, c.currentTime)
+      wf.frequency.exponentialRampToValueAtTime(4000, c.currentTime + 0.15); wf.Q.value = 3
+      wg.gain.setValueAtTime(0.06, c.currentTime)
+      wg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.2)
+      ws.connect(wf).connect(wg).connect(c.destination); ws.start()
       const o = c.createOscillator(), g = c.createGain()
-      o.type = 'sine'; o.frequency.setValueAtTime(300, c.currentTime)
-      o.frequency.exponentialRampToValueAtTime(1500, c.currentTime + 0.2)
+      o.type = 'sine'; o.frequency.setValueAtTime(200, c.currentTime)
+      o.frequency.exponentialRampToValueAtTime(2000, c.currentTime + 0.25)
       g.gain.setValueAtTime(0.08, c.currentTime)
       g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3)
       o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.3)
-      // Impact
-      const buf = c.createBuffer(1, c.sampleRate * 0.15, c.sampleRate)
+      const buf = c.createBuffer(1, c.sampleRate * 0.25, c.sampleRate)
       const d = buf.getChannelData(0)
-      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2)
-      const s = c.createBufferSource(), sg = c.createGain()
-      s.buffer = buf; sg.gain.setValueAtTime(0.12, c.currentTime + 0.2)
-      sg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.35)
-      s.connect(sg).connect(c.destination); s.start(c.currentTime + 0.2)
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 1.5)
+      const s = c.createBufferSource(), sg2 = c.createGain(), sf = c.createBiquadFilter()
+      s.buffer = buf; sf.type = 'lowpass'; sf.frequency.value = 1000
+      sg2.gain.setValueAtTime(0.15, c.currentTime + 0.25)
+      sg2.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5)
+      s.connect(sf).connect(sg2).connect(c.destination); s.start(c.currentTime + 0.25)
+      const boom = c.createOscillator(), bg = c.createGain()
+      boom.type = 'sine'; boom.frequency.setValueAtTime(60, c.currentTime + 0.25)
+      boom.frequency.exponentialRampToValueAtTime(20, c.currentTime + 0.4)
+      bg.gain.setValueAtTime(0.1, c.currentTime + 0.25)
+      bg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.45)
+      boom.connect(bg).connect(c.destination); boom.start(c.currentTime + 0.25); boom.stop(c.currentTime + 0.45)
     }),
     deploy: () => play(c => {
-      // Boot march
-      const o = c.createOscillator(), g = c.createGain()
-      o.type = 'square'; o.frequency.value = 100
-      g.gain.setValueAtTime(0.06, c.currentTime)
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.08)
-      o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.08)
-      // Radio click
+      for (let step = 0; step < 2; step++) {
+        const o = c.createOscillator(), g = c.createGain()
+        o.type = 'square'; o.frequency.value = 100
+        g.gain.setValueAtTime(0.06, c.currentTime + step * 0.08)
+        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + step * 0.08 + 0.06)
+        o.connect(g).connect(c.destination)
+        o.start(c.currentTime + step * 0.08); o.stop(c.currentTime + step * 0.08 + 0.06)
+      }
+      const buf = c.createBuffer(1, c.sampleRate * 0.08, c.sampleRate)
+      const data = buf.getChannelData(0)
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.3
+      const s = c.createBufferSource(), rg = c.createGain(), rf = c.createBiquadFilter()
+      s.buffer = buf; rf.type = 'bandpass'; rf.frequency.value = 2000; rf.Q.value = 5
+      rg.gain.setValueAtTime(0.04, c.currentTime + 0.12)
+      rg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.2)
+      s.connect(rf).connect(rg).connect(c.destination); s.start(c.currentTime + 0.12)
       const o2 = c.createOscillator(), g2 = c.createGain()
       o2.type = 'sine'; o2.frequency.value = 1400
-      g2.gain.setValueAtTime(0.04, c.currentTime + 0.1)
-      g2.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.15)
-      o2.connect(g2).connect(c.destination); o2.start(c.currentTime + 0.1); o2.stop(c.currentTime + 0.15)
+      g2.gain.setValueAtTime(0.04, c.currentTime + 0.18)
+      g2.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.22)
+      o2.connect(g2).connect(c.destination); o2.start(c.currentTime + 0.18); o2.stop(c.currentTime + 0.22)
     }),
     shieldUp: () => play(c => {
       const o = c.createOscillator(), g = c.createGain()
@@ -195,8 +308,41 @@ const SFX = (() => {
       o.frequency.exponentialRampToValueAtTime(800, c.currentTime + 0.3)
       g.gain.setValueAtTime(0.06, c.currentTime)
       g.gain.linearRampToValueAtTime(0.08, c.currentTime + 0.15)
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.35)
-      o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.35)
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.4)
+      o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.4)
+      const buf = c.createBuffer(1, c.sampleRate * 0.1, c.sampleRate)
+      const data = buf.getChannelData(0)
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (Math.random() < 0.3 ? 1 : 0.1)
+      const s = c.createBufferSource(), sg = c.createGain(), sf = c.createBiquadFilter()
+      s.buffer = buf; sf.type = 'highpass'; sf.frequency.value = 3000
+      sg.gain.setValueAtTime(0.04, c.currentTime + 0.15)
+      sg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3)
+      s.connect(sf).connect(sg).connect(c.destination); s.start(c.currentTime + 0.15)
+      const hum = c.createOscillator(), hg = c.createGain()
+      hum.type = 'triangle'; hum.frequency.value = 400
+      hg.gain.setValueAtTime(0.03, c.currentTime + 0.2)
+      hg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5)
+      hum.connect(hg).connect(c.destination); hum.start(c.currentTime + 0.2); hum.stop(c.currentTime + 0.5)
+    }),
+    eventAlert: () => play(c => {
+      const freqs = [880, 1100]
+      freqs.forEach((freq, i) => {
+        const o = c.createOscillator(), g = c.createGain()
+        o.type = 'square'; o.frequency.value = freq
+        const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = 3000
+        g.gain.setValueAtTime(0.06, c.currentTime + i * 0.12)
+        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + i * 0.12 + 0.1)
+        o.connect(fl).connect(g).connect(c.destination)
+        o.start(c.currentTime + i * 0.12); o.stop(c.currentTime + i * 0.12 + 0.1)
+      })
+      const buf = c.createBuffer(1, c.sampleRate * 0.05, c.sampleRate)
+      const data = buf.getChannelData(0)
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.2
+      const s = c.createBufferSource(), sg = c.createGain(), sf = c.createBiquadFilter()
+      s.buffer = buf; sf.type = 'bandpass'; sf.frequency.value = 2500; sf.Q.value = 2
+      sg.gain.setValueAtTime(0.03, c.currentTime + 0.2)
+      sg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3)
+      s.connect(sf).connect(sg).connect(c.destination); s.start(c.currentTime + 0.2)
     }),
   }
 })()
@@ -548,7 +694,153 @@ import { geoPath, geoNaturalEarth1 } from 'd3-geo'
 
 const WORLD_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 
-function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerritoryClick, onAllyClick, attackFrom, fortifyFrom, dragGuardRef, highlightedTargets }) {
+// SVG map animation overlay — renders visual effects at territory centroids
+function MapAnimation({ anim }) {
+  const { type, x, y, fromX, fromY, id } = anim
+  switch (type) {
+    case 'deploy_pulse':
+      return (
+        <circle cx={x} cy={y} r="3" fill="none" stroke="#3B82F6" strokeWidth="1.5">
+          <animate attributeName="r" from="3" to="25" dur="0.8s" fill="freeze" />
+          <animate attributeName="opacity" from="0.8" to="0" dur="0.8s" fill="freeze" />
+        </circle>
+      )
+    case 'build_flash':
+      return (
+        <g>
+          <circle cx={x} cy={y} r="2" fill="#F59E0B" opacity="0.8">
+            <animate attributeName="r" from="2" to="18" dur="0.6s" fill="freeze" />
+            <animate attributeName="opacity" from="0.8" to="0" dur="0.6s" fill="freeze" />
+          </circle>
+          {[0, 45, 90, 135].map(angle => (
+            <line key={angle} x1={x} y1={y}
+              x2={x + Math.cos(angle * Math.PI / 180) * 12}
+              y2={y + Math.sin(angle * Math.PI / 180) * 12}
+              stroke="#FBBF24" strokeWidth="1" opacity="0.6">
+              <animate attributeName="opacity" from="0.8" to="0" dur="0.6s" fill="freeze" />
+            </line>
+          ))}
+        </g>
+      )
+    case 'shield_dome':
+      return (
+        <g>
+          <circle cx={x} cy={y} r="5" fill="none" stroke="#60A5FA" strokeWidth="1.5" strokeDasharray="3 2">
+            <animate attributeName="r" from="5" to="20" dur="0.5s" fill="freeze" />
+            <animate attributeName="opacity" from="0" to="0.7" dur="0.3s" fill="freeze" />
+          </circle>
+          <circle cx={x} cy={y} r="20" fill="#3B82F6" fillOpacity="0.05">
+            <animate attributeName="fillOpacity" from="0.15" to="0.03" dur="1s" fill="freeze" />
+          </circle>
+        </g>
+      )
+    case 'drone_fly': {
+      if (fromX === undefined) return null
+      const pathId = `drone-path-${id}`
+      return (
+        <g>
+          <defs>
+            <path id={pathId} d={`M${fromX},${fromY} Q${(fromX+x)/2},${Math.min(fromY,y)-30} ${x},${y}`} />
+          </defs>
+          <circle r="3" fill="#22C55E">
+            <animateMotion dur="1s" fill="freeze">
+              <mpath href={`#${pathId}`} />
+            </animateMotion>
+            <animate attributeName="opacity" from="1" to="0" begin="0.8s" dur="0.4s" fill="freeze" />
+          </circle>
+          <path d={`M${fromX},${fromY} Q${(fromX+x)/2},${Math.min(fromY,y)-30} ${x},${y}`}
+            fill="none" stroke="#22C55E" strokeWidth="0.8" strokeDasharray="4 3" opacity="0.3">
+            <animate attributeName="opacity" from="0.4" to="0" dur="1.2s" fill="freeze" />
+          </path>
+        </g>
+      )
+    }
+    case 'missile_arc': {
+      if (fromX === undefined) return null
+      const mPathId = `missile-path-${id}`
+      const midX = (fromX + x) / 2
+      const midY = Math.min(fromY, y) - 60
+      return (
+        <g>
+          <defs>
+            <path id={mPathId} d={`M${fromX},${fromY} Q${midX},${midY} ${x},${y}`} />
+          </defs>
+          <circle r="2.5" fill="#EF4444">
+            <animateMotion dur="1.2s" fill="freeze">
+              <mpath href={`#${mPathId}`} />
+            </animateMotion>
+          </circle>
+          <path d={`M${fromX},${fromY} Q${midX},${midY} ${x},${y}`}
+            fill="none" stroke="#EF4444" strokeWidth="1" strokeDasharray="6 3" opacity="0.4">
+            <animate attributeName="opacity" from="0.5" to="0" dur="1.5s" fill="freeze" />
+          </path>
+          <circle cx={x} cy={y} r="2" fill="#FF6B6B" opacity="0">
+            <animate attributeName="r" from="2" to="20" begin="1.1s" dur="0.4s" fill="freeze" />
+            <animate attributeName="opacity" from="0" to="0.6" begin="1.1s" dur="0.1s" fill="freeze" />
+            <animate attributeName="opacity" from="0.6" to="0" begin="1.2s" dur="0.3s" fill="freeze" />
+          </circle>
+        </g>
+      )
+    }
+    case 'nuke_blast':
+      return (
+        <g>
+          <circle cx={x} cy={y} r="3" fill="#FBBF24" opacity="0.9">
+            <animate attributeName="r" from="3" to="35" dur="1s" fill="freeze" />
+            <animate attributeName="opacity" from="0.9" to="0" dur="1.2s" fill="freeze" />
+          </circle>
+          <circle cx={x} cy={y} r="5" fill="none" stroke="#EF4444" strokeWidth="2" opacity="0.7">
+            <animate attributeName="r" from="5" to="50" dur="1.5s" fill="freeze" />
+            <animate attributeName="opacity" from="0.7" to="0" dur="1.5s" fill="freeze" />
+          </circle>
+          {[0.3, 0.6, 0.9].map((delay, i) => (
+            <circle key={i} cx={x} cy={y} r="10" fill="none" stroke="#22C55E" strokeWidth="0.8" opacity="0">
+              <animate attributeName="r" from="10" to="45" begin={`${delay}s`} dur="1s" fill="freeze" />
+              <animate attributeName="opacity" from="0.5" to="0" begin={`${delay}s`} dur="1s" fill="freeze" />
+            </circle>
+          ))}
+        </g>
+      )
+    case 'combat_flash':
+      return (
+        <circle cx={x} cy={y} r="2" fill="#F59E0B" opacity="0.8">
+          <animate attributeName="r" from="2" to="15" dur="0.3s" fill="freeze" />
+          <animate attributeName="opacity" from="0.8" to="0" dur="0.5s" fill="freeze" />
+        </circle>
+      )
+    case 'conquer_glow':
+      return (
+        <g>
+          <circle cx={x} cy={y} r="5" fill="#3B82F6" opacity="0.6">
+            <animate attributeName="r" values="5;20;15;20" dur="1.2s" fill="freeze" />
+            <animate attributeName="opacity" from="0.6" to="0" dur="1.2s" fill="freeze" />
+          </circle>
+          <circle cx={x} cy={y} r="3" fill="none" stroke="#60A5FA" strokeWidth="1.5">
+            <animate attributeName="r" from="3" to="25" dur="0.8s" fill="freeze" />
+            <animate attributeName="opacity" from="0.8" to="0" dur="0.8s" fill="freeze" />
+          </circle>
+        </g>
+      )
+    case 'enemy_attack':
+      return (
+        <circle cx={x} cy={y} r="2" fill="#EF4444" opacity="0.7">
+          <animate attributeName="r" from="2" to="18" dur="0.5s" fill="freeze" />
+          <animate attributeName="opacity" from="0.7" to="0" dur="0.8s" fill="freeze" />
+        </circle>
+      )
+    case 'enemy_reinforce':
+      return (
+        <circle cx={x} cy={y} r="2" fill="#EF4444" opacity="0.3">
+          <animate attributeName="r" from="2" to="12" dur="0.4s" fill="freeze" />
+          <animate attributeName="opacity" from="0.3" to="0" dur="0.6s" fill="freeze" />
+        </circle>
+      )
+    default:
+      return null
+  }
+}
+
+function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerritoryClick, onAllyClick, attackFrom, fortifyFrom, dragGuardRef, highlightedTargets, mapAnimations, onCentroidsReady }) {
   const [worldFeatures, setWorldFeatures] = useState([])
   const [centroids, setCentroids] = useState({})
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
@@ -785,9 +1077,10 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
         // USA offset — push label slightly down-left to avoid Canada overlap
         if (c.usa) { c.usa = [c.usa[0] - 10, c.usa[1] + 10] }
         setCentroids(c)
+        if (onCentroidsReady) onCentroidsReady(c)
       })
       .catch(() => {})
-  }, [pathGen])
+  }, [pathGen, onCentroidsReady])
 
   // Build neighbor connection lines (deduplicated)
   const connections = useMemo(() => {
@@ -1103,6 +1396,11 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
             </g>
           )
         })()}
+
+        {/* Animation overlay */}
+        {mapAnimations && mapAnimations.map(anim => (
+          <MapAnimation key={anim.id} anim={anim} />
+        ))}
       </svg>
 
       {/* Zoom indicator */}
@@ -1255,6 +1553,60 @@ function ActionFeedback({ message }) {
   return (
     <div className="absolute top-12 left-1/2 -translate-x-1/2 z-40 bg-bg-card/95 border border-gold-accent/40 px-4 py-2 text-xs text-gold-accent max-w-md text-center">
       {message}
+    </div>
+  )
+}
+
+// ----------------------------------------------------------
+// EVENT POPUP — dramatic overlay for random events
+// ----------------------------------------------------------
+const EVENT_LABELS = {
+  double_income: 'DOUBLE INCOME THIS TURN', add_150: '+150 WARISK', add_100: '+100 WARISK', add_80: '+80 WARISK',
+  lose_50: '-50 WARISK', enemy_plus1: 'ALL ENEMIES +1 TROOP', recruit_2: '+2 TROOPS TO RANDOM TERRITORY',
+  free_missile: 'FREE MISSILE', free_nuke: 'FREE NUKE',
+  enemy_lose_troops: 'ENEMY LOSES TROOPS', shield_random: 'FREE SHIELD DEPLOYED',
+  building_destroyed: 'ENEMY BUILDING DESTROYED', enemy_infight: 'ENEMIES FIGHT EACH OTHER',
+  boost_all: '+1 TROOP ALL TERRITORIES', enemy_strike: 'ENEMY RAIDS YOUR OUTPOST',
+  halve_cost: '50% OFF NEXT PURCHASE', extra_income: 'TRIPLE INCOME THIS TURN', none: 'NO GAMEPLAY EFFECT',
+}
+const POSITIVE_EFFECTS = new Set(['double_income','add_150','add_100','add_80','recruit_2','free_missile','free_nuke','enemy_lose_troops','shield_random','building_destroyed','enemy_infight','boost_all','halve_cost','extra_income'])
+const NEGATIVE_EFFECTS = new Set(['lose_50','enemy_plus1','enemy_strike'])
+
+function EventPopup({ event, onDone }) {
+  const [visible, setVisible] = useState(true)
+  const onDoneRef = useRef(onDone)
+  onDoneRef.current = onDone
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setVisible(false)
+      setTimeout(() => onDoneRef.current(), 300)
+    }, 2500)
+    return () => clearTimeout(t)
+  }, [])
+
+  if (!event) return null
+  const isPos = POSITIVE_EFFECTS.has(event.effect)
+  const isNeg = NEGATIVE_EFFECTS.has(event.effect)
+
+  return (
+    <div className={`absolute inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
+      style={{ background: 'rgba(0,0,0,0.75)' }}>
+      <div className={`border-2 bg-bg-card/95 px-6 py-4 sm:px-10 sm:py-6 max-w-sm sm:max-w-md text-center event-popup-enter ${
+        isPos ? 'border-green-500/60' : isNeg ? 'border-red-enemy/60' : 'border-gold-accent/40'
+      }`}>
+        <div className="text-[10px] tracking-[0.3em] text-text-dim mb-2">INTELLIGENCE REPORT</div>
+        <div className={`text-sm sm:text-base font-bold mb-3 ${
+          isPos ? 'text-green-400' : isNeg ? 'text-red-400' : 'text-gold-accent'
+        }`}>
+          {event.text}
+        </div>
+        <div className={`text-xs tracking-wider ${
+          isPos ? 'text-green-400/70' : isNeg ? 'text-red-400/70' : 'text-text-dim'
+        }`}>
+          {EVENT_LABELS[event.effect] || event.effect.toUpperCase()}
+        </div>
+      </div>
     </div>
   )
 }
@@ -1466,8 +1818,38 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
   const [shaking, setShaking] = useState(false)
   const [showBriefing, setShowBriefing] = useState(() => !localStorage.getItem('warisk_briefing_seen'))
   const [diceData, setDiceData] = useState(null)
+  const [mapCentroids, setMapCentroids] = useState({})
+  const [mapAnimations, setMapAnimations] = useState([])
+  const [activeEvent, setActiveEvent] = useState(null)
+  const animIdRef = useRef(0)
   const feedbackTimer = useRef(null)
   const mapDragRef = useRef({ wasDragging: false })
+
+  const addMapAnimation = useCallback((type, fromId, toId) => {
+    const from = mapCentroids[fromId || 'usa']
+    const to = mapCentroids[toId]
+    if (!from && !to) return
+    const id = ++animIdRef.current
+    const anim = {
+      id, type,
+      x: to ? to[0] : from[0],
+      y: to ? to[1] : from[1],
+      fromX: from ? from[0] : undefined,
+      fromY: from ? from[1] : undefined,
+    }
+    setMapAnimations(prev => {
+      const active = [...prev, anim]
+      return active.length > 4 ? active.slice(-4) : active
+    })
+    const durations = {
+      deploy_pulse: 800, build_flash: 600, shield_dome: 1000,
+      drone_fly: 1200, missile_arc: 1500, nuke_blast: 2000,
+      combat_flash: 500, conquer_glow: 1200, enemy_attack: 800, enemy_reinforce: 600,
+    }
+    setTimeout(() => {
+      setMapAnimations(prev => prev.filter(a => a.id !== id))
+    }, durations[type] || 800)
+  }, [mapCentroids])
 
   const conquered = Object.values(game.territories)
     .filter(t => t.attackable && t.owner === 'player').length
@@ -1541,8 +1923,10 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
   const getEffectiveCost = useCallback((key) => {
     if (key === 'missile' && game.freeMissile) return 0
     if (key === 'nuke' && game.freeNuke) return 0
-    return SHOP[key]?.cost ?? 0
-  }, [game.freeMissile, game.freeNuke])
+    const baseCost = SHOP[key]?.cost ?? 0
+    if (game.halveCost && baseCost > 0) return Math.floor(baseCost / 2)
+    return baseCost
+  }, [game.freeMissile, game.freeNuke, game.halveCost])
 
   // Handle ally click (Israel foreign aid)
   const handleAllyClick = useCallback((id) => {
@@ -1731,6 +2115,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       const conquered = newDTroops <= 0
       setDiceData({ aRolls, dRolls, aLoss, dLoss, conquered })
       if (conquered) SFX.conquer(); else SFX.hit()
+      addMapAnimation('combat_flash', null, id)
 
       if (conquered) {
         // TERRITORY CONQUERED
@@ -1754,6 +2139,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         }))
         showFeedback(`CONQUERED! [${aRolls}] vs [${dRolls}] — ${msg}`)
         triggerShake()
+        addMapAnimation('conquer_glow', null, id)
       } else {
         // Battle continues — both sides take losses
         const headline = pickRandom(territory.headlines || GENERIC_HEADLINES)
@@ -1804,9 +2190,10 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       if (item.action === 'deploy') {
         // Deploy troop
         SFX.deploy()
+        addMapAnimation('deploy_pulse', null, id)
         setGame(prev => ({
           ...prev,
-          warisk: prev.warisk - cost,
+          warisk: prev.warisk - cost, halveCost: false,
           totalTroopsDeployed: prev.totalTroopsDeployed + 1,
           territories: {
             ...prev.territories,
@@ -1830,9 +2217,10 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           return
         }
         SFX.build()
+        addMapAnimation('build_flash', null, id)
         setGame(prev => ({
           ...prev,
-          warisk: prev.warisk - cost,
+          warisk: prev.warisk - cost, halveCost: false,
           territories: {
             ...prev.territories,
             [id]: { ...prev.territories[id], building: buildingType },
@@ -1853,9 +2241,10 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           return
         }
         SFX.shieldUp()
+        addMapAnimation('shield_dome', null, id)
         setGame(prev => ({
           ...prev,
-          warisk: prev.warisk - cost,
+          warisk: prev.warisk - cost, halveCost: false,
           territories: {
             ...prev.territories,
             [id]: { ...prev.territories[id], shield: true },
@@ -1885,11 +2274,12 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         // Drone Strike: kill 1-3 troops
         if (selectedItem === 'drone') {
           SFX.drone()
+          addMapAnimation('drone_fly', 'usa', id)
           const shielded = territory.shield
           if (shielded) {
             setGame(prev => ({
               ...prev,
-              warisk: prev.warisk - cost,
+              warisk: prev.warisk - cost, halveCost: false,
               totalDrones: prev.totalDrones + 1,
               territories: {
                 ...prev.territories,
@@ -1905,7 +2295,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           const droneConquered = territory.troops - kills <= 0
           setGame(prev => ({
             ...prev,
-            warisk: prev.warisk - cost,
+            warisk: prev.warisk - cost, halveCost: false,
             totalDrones: prev.totalDrones + 1,
             conqueredCount: droneConquered ? prev.conqueredCount + 1 : prev.conqueredCount,
             territories: {
@@ -1928,11 +2318,12 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         // Tactical Missile: kill 2-5 troops
         if (selectedItem === 'missile') {
           SFX.missileSound()
+          addMapAnimation('missile_arc', 'usa', id)
           const shielded = territory.shield
           if (shielded) {
             setGame(prev => ({
               ...prev,
-              warisk: prev.warisk - cost,
+              warisk: prev.warisk - cost, halveCost: false,
               freeMissile: false,
               totalMissiles: prev.totalMissiles + 1,
               territories: {
@@ -1949,7 +2340,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           const missileConquered = territory.troops - kills <= 0
           setGame(prev => ({
             ...prev,
-            warisk: prev.warisk - cost,
+            warisk: prev.warisk - cost, halveCost: false,
             freeMissile: false,
             totalMissiles: prev.totalMissiles + 1,
             conqueredCount: missileConquered ? prev.conqueredCount + 1 : prev.conqueredCount,
@@ -1975,7 +2366,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           const troopsBefore = territory.troops
           setGame(prev => ({
             ...prev,
-            warisk: prev.warisk - cost,
+            warisk: prev.warisk - cost, halveCost: false,
             freeNuke: false,
             totalNukes: prev.totalNukes + 1,
             conqueredCount: prev.territories[id].owner === 'enemy' ? prev.conqueredCount + 1 : prev.conqueredCount,
@@ -1994,6 +2385,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           }))
           showFeedback(`NUCLEAR STRIKE on ${territory.name}! -${troopsBefore} troops. Irradiated for 3 turns. "Democracy has been delivered."`)
           SFX.nuke()
+          addMapAnimation('nuke_blast', null, id)
           triggerShake()
           setSelectedItem(null)
           return
@@ -2008,7 +2400,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         const bldg = territory.building
         setGame(prev => ({
           ...prev,
-          warisk: prev.warisk - cost,
+          warisk: prev.warisk - cost, halveCost: false,
           territories: {
             ...prev.territories,
             [id]: { ...prev.territories[id], building: null },
@@ -2020,7 +2412,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         return
       }
     }
-  }, [selectedItem, attackFrom, fortifyFrom, game.phase, game.territories, game.warisk, setGame, showFeedback, getEffectiveCost, triggerShake])
+  }, [selectedItem, attackFrom, fortifyFrom, game.phase, game.territories, game.warisk, setGame, showFeedback, getEffectiveCost, triggerShake, addMapAnimation])
 
   // Confirm fortify — move chosen amount of troops
   const confirmFortify = useCallback(() => {
@@ -2096,6 +2488,8 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       }
       aiActions.push('Enemy forces reinforced (+1 each)')
       terminalEntries.push({ type: 'enemy', text: `[T${String(tn).padStart(2,'0')} ENEMY] All enemy territories reinforced +1 troop` })
+      const reinforceTargets = Object.keys(t).filter(id => t[id].owner === 'enemy' && t[id].attackable && t[id].irradiated === 0)
+      if (reinforceTargets.length > 0) addMapAnimation('enemy_reinforce', null, pickRandom(reinforceTargets))
     }
 
     // 2. Enemy builds: every 3 turns, a random enemy territory gets a factory/refinery
@@ -2149,6 +2543,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
             const hl = pickRandom(DEFENSE_HEADLINES).replace('{country}', 'Iran')
             aiActions.push(`${hl} -${dmg} in ${t[tid].name}`)
             terminalEntries.push({ type: 'enemy', text: `[T${String(tn).padStart(2,'0')} ENEMY] Iran attacks ${t[tid].name}: -${dmg} troops` })
+            addMapAnimation('enemy_attack', null, tid)
           }
         }
       }
@@ -2164,6 +2559,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           t[tid] = { ...t[tid], troops: t[tid].troops - dmg }
           aiActions.push(`Iraq strikes ${t[tid].name}! -${dmg} troops`)
           terminalEntries.push({ type: 'enemy', text: `[T${String(tn).padStart(2,'0')} ENEMY] Iraq strikes ${t[tid].name}: -${dmg} troops` })
+          addMapAnimation('enemy_attack', null, tid)
         }
       }
     }
@@ -2197,6 +2593,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       const newEnemyTroops = t[id].troops - aLoss
       const newPlayerTroops = t[tid].troops - dLoss
       t[id] = { ...t[id], troops: newEnemyTroops }
+      addMapAnimation('enemy_attack', null, tid)
 
       if (newPlayerTroops <= 0 && tid === 'usa') {
         // USA has fallen!
@@ -2264,6 +2661,9 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
     showFeedback(aiActions.join(' │ '))
 
     // Auto-advance to BUILD after delay + random event (30% chance)
+    const willTriggerEvent = Math.random() < 0.3
+    const selectedEvent = willTriggerEvent ? pickRandom(EVENTS) : null
+
     const timer = setTimeout(() => {
       setGame(prev => {
         const updated = {}
@@ -2279,14 +2679,13 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           turn: prev.turn + 1,
           territories: updated,
           doubleIncome: false,
+          tripleIncome: false,
         }
 
-        // 30% chance of random event
-        if (Math.random() < 0.3) {
-          const event = pickRandom(EVENTS)
-          next.newsQueue = capNews([...next.newsQueue, event.text])
+        if (selectedEvent) {
+          next.newsQueue = capNews([...next.newsQueue, selectedEvent.text])
 
-          switch (event.effect) {
+          switch (selectedEvent.effect) {
             case 'double_income':
               next.doubleIncome = true
               break
@@ -2325,16 +2724,92 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
             case 'free_nuke':
               next.freeNuke = true
               break
+            case 'enemy_lose_troops': {
+              const eLoseIds = Object.entries(next.territories)
+                .filter(([, ter]) => ter.owner === 'enemy' && ter.attackable && ter.troops > 1)
+                .map(([id]) => id)
+              if (eLoseIds.length > 0) {
+                const rid = pickRandom(eLoseIds)
+                const loss = Math.min(randInt(2, 3), next.territories[rid].troops - 1)
+                next.territories[rid] = { ...next.territories[rid], troops: next.territories[rid].troops - loss }
+              }
+              break
+            }
+            case 'shield_random': {
+              const shieldIds = Object.entries(next.territories)
+                .filter(([, ter]) => ter.owner === 'player' && !ter.shield)
+                .map(([id]) => id)
+              if (shieldIds.length > 0) {
+                const rid = pickRandom(shieldIds)
+                next.territories[rid] = { ...next.territories[rid], shield: true }
+              }
+              break
+            }
+            case 'building_destroyed': {
+              const bldgIds = Object.entries(next.territories)
+                .filter(([, ter]) => ter.owner === 'enemy' && ter.building)
+                .map(([id]) => id)
+              if (bldgIds.length > 0) {
+                const rid = pickRandom(bldgIds)
+                next.territories[rid] = { ...next.territories[rid], building: null }
+              }
+              break
+            }
+            case 'enemy_infight': {
+              const fightable = Object.entries(next.territories)
+                .filter(([, ter]) => ter.owner === 'enemy' && ter.attackable && ter.troops > 2)
+                .map(([id]) => id)
+              if (fightable.length >= 2) {
+                const a = pickRandom(fightable)
+                const b = pickRandom(fightable.filter(x => x !== a))
+                if (b) {
+                  const lossA = Math.min(randInt(1, 2), next.territories[a].troops - 1)
+                  const lossB = Math.min(randInt(1, 2), next.territories[b].troops - 1)
+                  next.territories[a] = { ...next.territories[a], troops: next.territories[a].troops - lossA }
+                  next.territories[b] = { ...next.territories[b], troops: next.territories[b].troops - lossB }
+                }
+              }
+              break
+            }
+            case 'boost_all':
+              for (const [id, ter] of Object.entries(next.territories)) {
+                if (ter.owner === 'player') {
+                  next.territories[id] = { ...ter, troops: ter.troops + 1 }
+                }
+              }
+              break
+            case 'enemy_strike': {
+              const strikeIds = Object.entries(next.territories)
+                .filter(([, ter]) => ter.owner === 'player' && ter.troops > 1)
+                .map(([id]) => id)
+              if (strikeIds.length > 0) {
+                const rid = pickRandom(strikeIds)
+                const loss = Math.min(randInt(1, 2), next.territories[rid].troops - 1)
+                next.territories[rid] = { ...next.territories[rid], troops: next.territories[rid].troops - loss }
+              }
+              break
+            }
+            case 'halve_cost':
+              next.halveCost = true
+              break
+            case 'extra_income':
+              next.tripleIncome = true
+              break
             default: // 'none'
               break
           }
 
-          next.terminalLog = addTerminalEntry(next.terminalLog || prev.terminalLog, 'event', `[T${String(next.turn).padStart(2,'0')} EVENT] ${event.text}`)
-          showFeedback(`EVENT: ${event.text}`)
+          next.terminalLog = addTerminalEntry(next.terminalLog || prev.terminalLog, 'event', `[T${String(next.turn).padStart(2,'0')} EVENT] ${selectedEvent.text}`)
         }
 
         return next
       })
+
+      if (selectedEvent) {
+        showFeedback(`EVENT: ${selectedEvent.text}`)
+        SFX.eventAlert()
+        setActiveEvent(selectedEvent)
+      }
     }, 3000)
 
     return () => clearTimeout(timer)
@@ -2358,7 +2833,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           <div className="text-sm text-gold-accent font-bold flex items-center gap-1">
             <img src="/warisk-coin.png" alt="W" className="w-4 h-4 inline-block" />
             {game.warisk}
-            <span className="text-xs text-gold-accent/60">(+{game.doubleIncome ? wariskPerSec * 2 : wariskPerSec}/s{game.doubleIncome ? ' x2!' : ''})</span>
+            <span className="text-xs text-gold-accent/60">(+{game.tripleIncome ? wariskPerSec * 3 : game.doubleIncome ? wariskPerSec * 2 : wariskPerSec}/s{game.tripleIncome ? ' x3!' : game.doubleIncome ? ' x2!' : ''})</span>
           </div>
           <div className="text-xs text-text-dim flex items-center gap-1.5">
             <span className="hidden sm:inline">TURN {game.turn} │ </span>
@@ -2477,6 +2952,8 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           fortifyFrom={fortifyFrom}
           dragGuardRef={mapDragRef}
           highlightedTargets={highlightedTargets}
+          mapAnimations={mapAnimations}
+          onCentroidsReady={setMapCentroids}
         />
       </div>
 
@@ -2557,7 +3034,10 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
                   <span className="sm:hidden">{SHOP_SHORT[key] || item.name}</span>
                 </span>
                 <span className={`flex items-center gap-1 ${canAfford ? 'text-gold-accent/70' : 'text-text-dim/30'}`}>
-                  {isFree ? 'FREE' : <><img src="/warisk-coin.png" alt="W" className="w-3 h-3 sm:w-4 sm:h-4 inline-block" />{item.cost}</>}
+                  {isFree ? 'FREE' : <><img src="/warisk-coin.png" alt="W" className="w-3 h-3 sm:w-4 sm:h-4 inline-block" />{effectiveCost}</>}
+                  {game.halveCost && effectiveCost > 0 && effectiveCost < item.cost && (
+                    <span className="text-[8px] text-green-400 discount-badge">-50%</span>
+                  )}
                 </span>
               </button>
             )
@@ -2618,6 +3098,11 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           </div>
         )
       })()}
+
+      {/* Event popup overlay */}
+      {activeEvent && (
+        <EventPopup event={activeEvent} onDone={() => setActiveEvent(null)} />
+      )}
 
       {/* Mission Briefing overlay — shows on first load */}
       {showBriefing && (
@@ -2889,6 +3374,8 @@ function createInitialGameState(difficulty = 'normal') {
     freeMissile: false,
     freeNuke: false,
     doubleIncome: false,
+    halveCost: false,
+    tripleIncome: false,
   }
 }
 
@@ -2942,7 +3429,7 @@ export default function App() {
     if (screen !== 'game') return
     const interval = setInterval(() => {
       setGame(prev => {
-        const income = prev.doubleIncome ? wariskPerSecRef.current * 2 : wariskPerSecRef.current
+        const income = prev.tripleIncome ? wariskPerSecRef.current * 3 : prev.doubleIncome ? wariskPerSecRef.current * 2 : wariskPerSecRef.current
         return {
           ...prev,
           warisk: prev.warisk + income,
