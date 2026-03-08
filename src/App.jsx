@@ -636,8 +636,7 @@ const ISO_TO_GAME = {
 // Load world map data
 import { feature } from 'topojson-client'
 import { geoPath, geoNaturalEarth1 } from 'd3-geo'
-
-const WORLD_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
+import worldAtlas110m from 'world-atlas/countries-110m.json'
 
 // SVG map animation overlay — renders visual effects at territory centroids
 function MapAnimation({ anim }) {
@@ -950,8 +949,6 @@ function MapAnimation({ anim }) {
 }
 
 function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerritoryClick, onAllyClick, attackFrom, fortifyFrom, dragGuardRef, highlightedTargets, mapAnimations, onCentroidsReady }) {
-  const [worldFeatures, setWorldFeatures] = useState([])
-  const [centroids, setCentroids] = useState({})
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
   const [zoom, setZoom] = useState(() => isMobile ? 1.5 : 1.1)
   const [pan, setPan] = useState(() => isMobile ? { x: -30, y: -5 } : { x: 0, y: 0 })
@@ -992,7 +989,6 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
   }, [])
 
   // Attach wheel listener (zoom toward cursor) + mouse drag for panning
-  const mapLoaded = worldFeatures.length > 0
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
@@ -1154,42 +1150,43 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
       el.removeEventListener('touchmove', onTouchMove)
       el.removeEventListener('touchend', onTouchEnd)
     }
-  }, [mapLoaded, clampPan])
+  }, [clampPan, dragGuardRef])
 
-  // Load world atlas on mount
-  useEffect(() => {
-    fetch(WORLD_URL)
-      .then(r => r.json())
-      .then(topo => {
-        const geo = feature(topo, topo.objects.countries)
-        setWorldFeatures(geo.features)
+  const { worldFeatures, centroids, mapLoadError } = useMemo(() => {
+    try {
+      const geo = feature(worldAtlas110m, worldAtlas110m.objects.countries)
 
-        // Pre-compute centroids for labeling
-        const c = {}
-        for (const f of geo.features) {
-          const mapping = ISO_TO_GAME[f.id]
-          if (mapping && (mapping.type === 'territory' || mapping.id)) {
-            const centroid = pathGen.centroid(f)
-            if (centroid && !isNaN(centroid[0])) {
-              c[mapping.id || f.id] = centroid
-            }
+      // Pre-compute centroids for labeling
+      const c = {}
+      for (const f of geo.features) {
+        const mapping = ISO_TO_GAME[f.id]
+        if (mapping && (mapping.type === 'territory' || mapping.id)) {
+          const centroid = pathGen.centroid(f)
+          if (centroid && !isNaN(centroid[0])) {
+            c[mapping.id || f.id] = centroid
           }
         }
-        // Manual offsets for overlapping Middle East labels
-        if (c.iraq) { c.iraq = [c.iraq[0], c.iraq[1] + 8] }
-        if (c.iran) { c.iran = [c.iran[0] + 20, c.iran[1] - 10] }
-        if (c.yemen) { c.yemen = [c.yemen[0], c.yemen[1] + 20] }
-        if (c.syria) { c.syria = [c.syria[0] - 10, c.syria[1] - 18] }
-        if (c.libya) { c.libya = [c.libya[0] - 22, c.libya[1]] }
-        if (c.afghanistan) { c.afghanistan = [c.afghanistan[0] + 22, c.afghanistan[1]] }
-        if (c.somalia) { c.somalia = [c.somalia[0], c.somalia[1] + 20] }
-        // USA offset — push label slightly down-left to avoid Canada overlap
-        if (c.usa) { c.usa = [c.usa[0] - 10, c.usa[1] + 10] }
-        setCentroids(c)
-        if (onCentroidsReady) onCentroidsReady(c)
-      })
-      .catch(() => {})
-  }, [pathGen, onCentroidsReady])
+      }
+      // Manual offsets for overlapping Middle East labels
+      if (c.iraq) { c.iraq = [c.iraq[0], c.iraq[1] + 8] }
+      if (c.iran) { c.iran = [c.iran[0] + 20, c.iran[1] - 10] }
+      if (c.yemen) { c.yemen = [c.yemen[0], c.yemen[1] + 20] }
+      if (c.syria) { c.syria = [c.syria[0] - 10, c.syria[1] - 18] }
+      if (c.libya) { c.libya = [c.libya[0] - 22, c.libya[1]] }
+      if (c.afghanistan) { c.afghanistan = [c.afghanistan[0] + 22, c.afghanistan[1]] }
+      if (c.somalia) { c.somalia = [c.somalia[0], c.somalia[1] + 20] }
+      // USA offset - push label slightly down-left to avoid Canada overlap
+      if (c.usa) { c.usa = [c.usa[0] - 10, c.usa[1] + 10] }
+
+      return { worldFeatures: geo.features, centroids: c, mapLoadError: null }
+    } catch {
+      return { worldFeatures: [], centroids: {}, mapLoadError: 'WORLD MAP UNAVAILABLE. RELOAD TO RETRY.' }
+    }
+  }, [pathGen])
+
+  useEffect(() => {
+    if (onCentroidsReady) onCentroidsReady(centroids)
+  }, [centroids, onCentroidsReady])
 
   // Build neighbor connection lines (deduplicated)
   const connections = useMemo(() => {
@@ -1217,6 +1214,14 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
   const vh = 520 / zoom
   const vx = (900 - vw) / 2 + pan.x
   const vy = (520 - vh) / 2 + pan.y
+
+  if (mapLoadError) {
+    return (
+      <div className="relative w-full h-full flex items-center justify-center">
+        <span className="text-red-enemy text-xs tracking-wider">{mapLoadError}</span>
+      </div>
+    )
+  }
 
   if (worldFeatures.length === 0) {
     return (
@@ -1935,6 +1940,23 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
   const animIdRef = useRef(0)
   const feedbackTimer = useRef(null)
   const mapDragRef = useRef({ wasDragging: false })
+  const pendingTimeoutsRef = useRef(new Set())
+
+  const clearTrackedTimeout = useCallback((timerRef) => {
+    if (timerRef.current === null) return
+    clearTimeout(timerRef.current)
+    pendingTimeoutsRef.current.delete(timerRef.current)
+    timerRef.current = null
+  }, [])
+
+  const scheduleTimeout = useCallback((fn, delayMs) => {
+    const timeoutId = setTimeout(() => {
+      pendingTimeoutsRef.current.delete(timeoutId)
+      fn()
+    }, delayMs)
+    pendingTimeoutsRef.current.add(timeoutId)
+    return timeoutId
+  }, [])
 
   const addMapAnimation = useCallback((type, fromId, toId) => {
     const from = mapCentroids[fromId || 'usa']
@@ -1957,10 +1979,10 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       drone_fly: 2000, missile_arc: 2500, nuke_blast: 4000,
       combat_flash: 500, conquer_glow: 1200, enemy_attack: 800, enemy_reinforce: 600,
     }
-    setTimeout(() => {
+    scheduleTimeout(() => {
       setMapAnimations(prev => prev.filter(a => a.id !== id))
     }, durations[type] || 800)
-  }, [mapCentroids])
+  }, [mapCentroids, scheduleTimeout])
 
   const conquered = Object.values(game.territories)
     .filter(t => t.attackable && t.owner === 'player').length
@@ -1987,12 +2009,18 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
     return targets
   }, [attackFrom, fortifyFrom, fortifyTo, game.phase, game.territories])
 
-  // Clean up feedback timer on unmount
+  // Clean up tracked timers on unmount
   useEffect(() => {
-    return () => clearTimeout(feedbackTimer.current)
-  }, [])
+    return () => {
+      clearTrackedTimeout(feedbackTimer)
+      clearTrackedTimeout(shakeTimer)
+      const pendingTimeouts = Array.from(pendingTimeoutsRef.current)
+      for (const timeoutId of pendingTimeouts) clearTimeout(timeoutId)
+      pendingTimeoutsRef.current.clear()
+    }
+  }, [clearTrackedTimeout])
 
-  // Victory detection — all attackable territories conquered
+  // Victory detection - all attackable territories conquered
   useEffect(() => {
     if (conquered >= TOTAL_ATTACKABLE) {
       SFX.victory()
@@ -2001,7 +2029,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
     }
   }, [conquered, onVictory])
 
-  // Defeat detection — USA has 0 troops
+  // Defeat detection - USA has 0 troops
   useEffect(() => {
     const usa = game.territories.usa
     if (usa && usa.troops <= 0) {
@@ -2014,16 +2042,22 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
   // Show temporary feedback message
   const showFeedback = useCallback((msg) => {
     setFeedback(msg)
-    clearTimeout(feedbackTimer.current)
-    feedbackTimer.current = setTimeout(() => setFeedback(null), 2500)
-  }, [])
+    clearTrackedTimeout(feedbackTimer)
+    feedbackTimer.current = scheduleTimeout(() => {
+      setFeedback(null)
+      feedbackTimer.current = null
+    }, 2500)
+  }, [clearTrackedTimeout, scheduleTimeout])
 
   const shakeTimer = useRef(null)
   const triggerShake = useCallback(() => {
-    if (shakeTimer.current) clearTimeout(shakeTimer.current)
+    clearTrackedTimeout(shakeTimer)
     setShaking(true)
-    shakeTimer.current = setTimeout(() => setShaking(false), 200)
-  }, [])
+    shakeTimer.current = scheduleTimeout(() => {
+      setShaking(false)
+      shakeTimer.current = null
+    }, 200)
+  }, [clearTrackedTimeout, scheduleTimeout])
 
   // Filter shop items by current phase
   const phaseItems = useMemo(() => {
@@ -2392,7 +2426,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           // Delayed: effects sync with animation impact (~1300ms)
           const tName = territory.name
           const wasShielded = territory.shield
-          setTimeout(() => {
+          scheduleTimeout(() => {
             SFX.droneImpact()
             setGame(prev => {
               const live = prev.territories[id]
@@ -2438,7 +2472,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           // Delayed: effects sync with animation impact (~1500ms)
           const tName = territory.name
           const wasShielded = territory.shield
-          setTimeout(() => {
+          scheduleTimeout(() => {
             SFX.missileImpact()
             triggerShake()
             setGame(prev => {
@@ -2482,7 +2516,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           setSelectedItem(null)
           // Delayed: effects sync with ICBM impact (~2300ms)
           const tName = territory.name
-          setTimeout(() => {
+          scheduleTimeout(() => {
             triggerShake()
             setGame(prev => {
               const live = prev.territories[id]
@@ -2531,7 +2565,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         return
       }
     }
-  }, [selectedItem, attackFrom, fortifyFrom, game.phase, game.territories, game.warisk, setGame, showFeedback, getEffectiveCost, triggerShake, addMapAnimation])
+  }, [selectedItem, attackFrom, fortifyFrom, game.phase, game.territories, game.warisk, setGame, showFeedback, getEffectiveCost, triggerShake, addMapAnimation, scheduleTimeout])
 
   // Confirm fortify — move chosen amount of troops
   const confirmFortify = useCallback(() => {
@@ -3562,6 +3596,7 @@ export default function App() {
   const goToGame = useCallback((difficulty = 'normal') => {
     setGame(createInitialGameState(difficulty))
     clearSave()
+    setHasSave(false)
     setScreen('game')
   }, [])
 
@@ -3570,6 +3605,8 @@ export default function App() {
     if (saved) {
       setGame(saved)
       setScreen('game')
+    } else {
+      setHasSave(false)
     }
   }, [])
 
