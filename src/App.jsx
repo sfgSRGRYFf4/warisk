@@ -67,51 +67,41 @@ const SFX = (() => {
       g3.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3)
       o3.connect(g3).connect(c.destination); o3.start(c.currentTime + 0.08); o3.stop(c.currentTime + 0.3)
     }),
-    explosion: () => play(c => {
-      const buf = c.createBuffer(1, c.sampleRate * 0.4, c.sampleRate)
-      const data = buf.getChannelData(0)
-      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 2)
-      const s = c.createBufferSource(), g = c.createGain()
-      s.buffer = buf; g.gain.setValueAtTime(0.15, c.currentTime)
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.4)
-      s.connect(g).connect(c.destination); s.start()
-      const boom = c.createOscillator(), bg = c.createGain()
-      boom.type = 'sine'; boom.frequency.setValueAtTime(80, c.currentTime)
-      boom.frequency.exponentialRampToValueAtTime(30, c.currentTime + 0.3)
-      bg.gain.setValueAtTime(0.12, c.currentTime)
-      bg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.35)
-      boom.connect(bg).connect(c.destination); boom.start(); boom.stop(c.currentTime + 0.35)
-      const dbuf = c.createBuffer(1, c.sampleRate * 0.15, c.sampleRate)
-      const dd = dbuf.getChannelData(0)
-      for (let i = 0; i < dd.length; i++) dd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / dd.length, 3)
-      const ds = c.createBufferSource(), dg = c.createGain(), df = c.createBiquadFilter()
-      ds.buffer = dbuf; df.type = 'highpass'; df.frequency.value = 2000
-      dg.gain.setValueAtTime(0.06, c.currentTime + 0.2)
-      dg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.4)
-      ds.connect(df).connect(dg).connect(c.destination); ds.start(c.currentTime + 0.2)
-    }),
-    nuke: () => play(c => {
-      const buf = c.createBuffer(1, c.sampleRate * 1.2, c.sampleRate)
-      const data = buf.getChannelData(0)
-      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 1.5)
-      const s = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter()
-      s.buffer = buf; f.type = 'lowpass'; f.frequency.setValueAtTime(2000, c.currentTime)
-      f.frequency.exponentialRampToValueAtTime(60, c.currentTime + 1.0)
-      g.gain.setValueAtTime(0.2, c.currentTime)
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 1.2)
-      s.connect(f).connect(g).connect(c.destination); s.start()
-      const sub = c.createOscillator(), sg = c.createGain()
-      sub.type = 'sine'; sub.frequency.value = 35
-      sg.gain.setValueAtTime(0.15, c.currentTime)
-      sg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 1.0)
-      sub.connect(sg).connect(c.destination); sub.start(); sub.stop(c.currentTime + 1.0)
-      const hum = c.createOscillator(), hg = c.createGain()
-      hum.type = 'sawtooth'; hum.frequency.value = 60
-      hg.gain.setValueAtTime(0, c.currentTime + 0.6)
-      hg.gain.linearRampToValueAtTime(0.04, c.currentTime + 0.8)
-      hg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 1.5)
-      hum.connect(hg).connect(c.destination); hum.start(c.currentTime + 0.6); hum.stop(c.currentTime + 1.5)
-    }),
+    missileImpact: () => {
+      const audio = new Audio('/missile-impact.mp3')
+      audio.volume = 0.25
+      audio.play().catch(() => {})
+      audio.addEventListener('ended', () => { audio.src = '' })
+    },
+    explosion: (fadeAfterMs = 0) => {
+      const audio = new Audio('/missile-explosion.mp3')
+      audio.volume = 0.2
+      audio.play().catch(() => {})
+      if (fadeAfterMs > 0) {
+        setTimeout(() => {
+          const fade = setInterval(() => {
+            if (audio.volume > 0.03) audio.volume = Math.max(0, audio.volume - 0.05)
+            else { audio.pause(); clearInterval(fade) }
+          }, 50)
+        }, fadeAfterMs)
+      }
+      return audio
+    },
+    nuke: (fadeAfterMs = 0) => {
+      const audio = new Audio('/nuke-explosion.mp3')
+      audio.volume = 0.2
+      audio.playbackRate = 1.5
+      audio.play().catch(() => {})
+      if (fadeAfterMs > 0) {
+        setTimeout(() => {
+          const fade = setInterval(() => {
+            if (audio.volume > 0.03) audio.volume = Math.max(0, audio.volume - 0.05)
+            else { audio.pause(); clearInterval(fade) }
+          }, 50)
+        }, fadeAfterMs)
+      }
+      return audio
+    },
     victory: () => play(c => {
       const notes = [523, 659, 784, 1047]
       notes.forEach((freq, i) => {
@@ -204,50 +194,32 @@ const SFX = (() => {
       eg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.8)
       es.connect(ef).connect(eg).connect(c.destination); es.start(c.currentTime + 0.5)
     }),
-    build: () => play(c => {
-      for (let i = 0; i < 3; i++) {
-        const o = c.createOscillator(), g = c.createGain()
-        o.type = 'square'; o.frequency.setValueAtTime(800 - i * 100, c.currentTime + i * 0.06)
-        o.frequency.exponentialRampToValueAtTime(400 - i * 50, c.currentTime + i * 0.06 + 0.04)
-        g.gain.setValueAtTime(0.05, c.currentTime + i * 0.06)
-        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + i * 0.06 + 0.05)
-        o.connect(g).connect(c.destination)
-        o.start(c.currentTime + i * 0.06); o.stop(c.currentTime + i * 0.06 + 0.05)
+    build: () => {
+      const audio = new Audio('/build.mp3')
+      audio.volume = 0.18
+      audio.play().catch(() => {})
+      audio.addEventListener('ended', () => { audio.src = '' })
+    },
+    droneImpact: () => {
+      const audio = new Audio('/drone-explosion.mp3')
+      audio.volume = 0.25
+      audio.play().catch(() => {})
+      audio.addEventListener('ended', () => { audio.src = '' })
+    },
+    drone: (fadeAfterMs = 1300) => {
+      const audio = new Audio('/drone-fly.mp3')
+      audio.volume = 0.2
+      audio.play().catch(() => {})
+      if (fadeAfterMs > 0) {
+        setTimeout(() => {
+          const fade = setInterval(() => {
+            if (audio.volume > 0.03) audio.volume = Math.max(0, audio.volume - 0.05)
+            else { audio.pause(); clearInterval(fade) }
+          }, 50)
+        }, fadeAfterMs)
       }
-      const chime = c.createOscillator(), cg = c.createGain()
-      chime.type = 'sine'; chime.frequency.value = 1400
-      cg.gain.setValueAtTime(0.06, c.currentTime + 0.2)
-      cg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.4)
-      chime.connect(cg).connect(c.destination); chime.start(c.currentTime + 0.2); chime.stop(c.currentTime + 0.4)
-      const ch2 = c.createOscillator(), cg2 = c.createGain()
-      ch2.type = 'sine'; ch2.frequency.value = 1760
-      cg2.gain.setValueAtTime(0.03, c.currentTime + 0.25)
-      cg2.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.4)
-      ch2.connect(cg2).connect(c.destination); ch2.start(c.currentTime + 0.25); ch2.stop(c.currentTime + 0.4)
-    }),
-    drone: () => play(c => {
-      const o = c.createOscillator(), g = c.createGain()
-      o.type = 'sawtooth'; o.frequency.setValueAtTime(600, c.currentTime)
-      o.frequency.exponentialRampToValueAtTime(1800, c.currentTime + 0.15)
-      g.gain.setValueAtTime(0.06, c.currentTime)
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.25)
-      o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.25)
-      const prop = c.createOscillator(), pg = c.createGain()
-      prop.type = 'square'; prop.frequency.value = 120
-      const lfo = c.createOscillator(), lg = c.createGain()
-      lfo.type = 'square'; lfo.frequency.value = 30; lg.gain.value = 0.03
-      lfo.connect(lg).connect(pg.gain)
-      pg.gain.setValueAtTime(0.04, c.currentTime)
-      pg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.2)
-      prop.connect(pg).connect(c.destination)
-      prop.start(); lfo.start(); prop.stop(c.currentTime + 0.2); lfo.stop(c.currentTime + 0.2)
-      const dop = c.createOscillator(), dg = c.createGain()
-      dop.type = 'sine'; dop.frequency.setValueAtTime(1800, c.currentTime + 0.1)
-      dop.frequency.exponentialRampToValueAtTime(400, c.currentTime + 0.25)
-      dg.gain.setValueAtTime(0.03, c.currentTime + 0.1)
-      dg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.25)
-      dop.connect(dg).connect(c.destination); dop.start(c.currentTime + 0.1); dop.stop(c.currentTime + 0.25)
-    }),
+      return audio
+    },
     missileSound: () => play(c => {
       const wBuf = c.createBuffer(1, c.sampleRate * 0.15, c.sampleRate)
       const wd = wBuf.getChannelData(0)
@@ -354,58 +326,31 @@ const DIFFICULTY_SETTINGS = {
 }
 
 // ----------------------------------------------------------
-// AMBIENT MUSIC — procedural military drone
+// AMBIENT MUSIC — looping background track
 // ----------------------------------------------------------
 const MusicEngine = (() => {
-  let ctx = null, masterGain = null, playing = false, nodes = []
+  let audio = null, playing = false
 
   return {
     start() {
       if (playing) return
       try {
-        ctx = new (window.AudioContext || window.webkitAudioContext)()
-        if (ctx.state === 'suspended') ctx.resume()
-        masterGain = ctx.createGain()
-        masterGain.gain.value = 0.04
-        masterGain.connect(ctx.destination)
-
-        // Low bass drone
-        const bass = ctx.createOscillator()
-        bass.type = 'sine'; bass.frequency.value = 55
-        const bassGain = ctx.createGain(); bassGain.gain.value = 0.6
-        bass.connect(bassGain).connect(masterGain); bass.start()
-        nodes.push(bass)
-
-        // Mid tension
-        const mid = ctx.createOscillator()
-        mid.type = 'triangle'; mid.frequency.value = 110
-        const midGain = ctx.createGain(); midGain.gain.value = 0.2
-        mid.connect(midGain).connect(masterGain); mid.start()
-        nodes.push(mid)
-
-        // Subtle high pulse
-        const hi = ctx.createOscillator()
-        hi.type = 'sine'; hi.frequency.value = 220
-        const hiGain = ctx.createGain()
-        hiGain.gain.setValueAtTime(0.05, ctx.currentTime)
-        // LFO for pulsing
-        const lfo = ctx.createOscillator()
-        lfo.type = 'sine'; lfo.frequency.value = 0.3
-        const lfoGain = ctx.createGain(); lfoGain.gain.value = 0.05
-        lfo.connect(lfoGain).connect(hiGain.gain)
-        hi.connect(hiGain).connect(masterGain); hi.start(); lfo.start()
-        nodes.push(hi, lfo)
-
-        playing = true
+        audio = new Audio('/bgm.mp3')
+        audio.loop = true
+        audio.volume = 0.04
+        const p = audio.play()
+        if (p !== undefined) {
+          p.then(() => { playing = true }).catch(() => { audio = null })
+        } else {
+          playing = true
+        }
       } catch {}
     },
     stop() {
       if (!playing) return
       try {
-        nodes.forEach(n => { try { n.stop() } catch {} })
-        nodes = []
-        if (ctx) ctx.close()
-        ctx = null; masterGain = null; playing = false
+        if (audio) { audio.pause(); audio.currentTime = 0; audio = null }
+        playing = false
       } catch {}
     },
     get isPlaying() { return playing },
@@ -737,70 +682,234 @@ function MapAnimation({ anim }) {
     case 'drone_fly': {
       if (fromX === undefined) return null
       const pathId = `drone-path-${id}`
+      const ctrlY = Math.min(fromY, y) - 60
+      const pathD = `M${fromX},${fromY} Q${(fromX+x)/2},${ctrlY} ${x},${y}`
       return (
         <g>
           <defs>
-            <path id={pathId} d={`M${fromX},${fromY} Q${(fromX+x)/2},${Math.min(fromY,y)-30} ${x},${y}`} />
+            <path id={pathId} d={pathD} />
+            <filter id={`drone-blur-${id}`}><feGaussianBlur stdDeviation="3" /></filter>
           </defs>
-          <circle r="3" fill="#22C55E">
-            <animateMotion dur="1s" fill="freeze">
+          {/* Flight path trail */}
+          <path d={pathD} fill="none" stroke="#4ADE80" strokeWidth="1.5" strokeDasharray="8 5" opacity="0">
+            <animate attributeName="opacity" from="0" to="0.5" dur="0.2s" fill="freeze" />
+            <animate attributeName="opacity" from="0.5" to="0" begin="1.4s" dur="0.4s" fill="freeze" />
+          </path>
+          {/* Drone aircraft */}
+          <g>
+            <animateMotion dur="1.4s" fill="freeze" rotate="auto">
               <mpath href={`#${pathId}`} />
             </animateMotion>
-            <animate attributeName="opacity" from="1" to="0" begin="0.8s" dur="0.4s" fill="freeze" />
+            {/* Engine glow trail */}
+            <ellipse cx="-8" cy="0" rx="6" ry="2" fill="#22C55E" opacity="0.3" filter={`url(#drone-blur-${id})`}>
+              <animate attributeName="opacity" from="0.4" to="0" begin="1.3s" dur="0.15s" fill="freeze" />
+            </ellipse>
+            {/* Drone body — delta wing shape */}
+            <polygon points="7,0 -3,-2.5 -5,0 -3,2.5" fill="#4ADE80" opacity="0.9">
+              <animate attributeName="opacity" from="0.9" to="0" begin="1.3s" dur="0.15s" fill="freeze" />
+            </polygon>
+            {/* Left wing */}
+            <polygon points="1,-1 -2,-7 -4,-5 -1,0" fill="#4ADE80" opacity="0.65">
+              <animate attributeName="opacity" from="0.65" to="0" begin="1.3s" dur="0.15s" fill="freeze" />
+            </polygon>
+            {/* Right wing */}
+            <polygon points="1,1 -2,7 -4,5 -1,0" fill="#4ADE80" opacity="0.65">
+              <animate attributeName="opacity" from="0.65" to="0" begin="1.3s" dur="0.15s" fill="freeze" />
+            </polygon>
+            {/* Blinking nose light */}
+            <circle cx="6" cy="0" r="1.5" fill="#FFFFFF" opacity="0.7">
+              <animate attributeName="opacity" values="0.8;0.2;0.8" dur="0.35s" repeatCount="4" />
+              <animate attributeName="opacity" from="0.7" to="0" begin="1.3s" dur="0.1s" fill="freeze" />
+            </circle>
+          </g>
+          {/* Impact explosion */}
+          <circle cx={x} cy={y} r="3" fill="#4ADE80" opacity="0">
+            <animate attributeName="r" from="3" to="20" begin="1.3s" dur="0.3s" fill="freeze" />
+            <animate attributeName="opacity" from="0" to="0.8" begin="1.3s" dur="0.1s" fill="freeze" />
+            <animate attributeName="opacity" from="0.8" to="0" begin="1.5s" dur="0.3s" fill="freeze" />
           </circle>
-          <path d={`M${fromX},${fromY} Q${(fromX+x)/2},${Math.min(fromY,y)-30} ${x},${y}`}
-            fill="none" stroke="#22C55E" strokeWidth="0.8" strokeDasharray="4 3" opacity="0.3">
-            <animate attributeName="opacity" from="0.4" to="0" dur="1.2s" fill="freeze" />
-          </path>
+          <circle cx={x} cy={y} r="5" fill="none" stroke="#22C55E" strokeWidth="2" opacity="0">
+            <animate attributeName="r" from="5" to="28" begin="1.35s" dur="0.4s" fill="freeze" />
+            <animate attributeName="opacity" from="0" to="0.5" begin="1.35s" dur="0.1s" fill="freeze" />
+            <animate attributeName="opacity" from="0.5" to="0" begin="1.6s" dur="0.25s" fill="freeze" />
+          </circle>
         </g>
       )
     }
     case 'missile_arc': {
       if (fromX === undefined) return null
       const mPathId = `missile-path-${id}`
+      const dist = Math.sqrt((x - fromX) ** 2 + (y - fromY) ** 2)
+      const arcHeight = Math.max(100, dist * 0.5)
       const midX = (fromX + x) / 2
-      const midY = Math.min(fromY, y) - 60
+      const midY = Math.min(fromY, y) - arcHeight
+      const missilePathD = `M${fromX},${fromY} Q${midX},${midY} ${x},${y}`
       return (
         <g>
           <defs>
-            <path id={mPathId} d={`M${fromX},${fromY} Q${midX},${midY} ${x},${y}`} />
+            <path id={mPathId} d={missilePathD} />
+            <filter id={`missile-blur-${id}`}><feGaussianBlur stdDeviation="3" /></filter>
+            <filter id={`missile-bloom-${id}`}><feGaussianBlur stdDeviation="6" /></filter>
           </defs>
-          <circle r="2.5" fill="#EF4444">
-            <animateMotion dur="1.2s" fill="freeze">
+          {/* Trajectory arc — bright dashed */}
+          <path d={missilePathD} fill="none" stroke="#EF4444" strokeWidth="2.5" strokeDasharray="14 7" opacity="0">
+            <animate attributeName="opacity" from="0" to="0.6" dur="0.2s" fill="freeze" />
+            <animate attributeName="opacity" from="0.6" to="0" begin="2s" dur="0.5s" fill="freeze" />
+          </path>
+          {/* Glow behind trajectory */}
+          <path d={missilePathD} fill="none" stroke="#EF4444" strokeWidth="10" opacity="0" filter={`url(#missile-blur-${id})`}>
+            <animate attributeName="opacity" from="0" to="0.2" dur="0.2s" fill="freeze" />
+            <animate attributeName="opacity" from="0.2" to="0" begin="2s" dur="0.5s" fill="freeze" />
+          </path>
+          {/* Missile projectile */}
+          <g>
+            <animateMotion dur="1.5s" fill="freeze" rotate="auto">
               <mpath href={`#${mPathId}`} />
             </animateMotion>
+            {/* Engine flame trail */}
+            <ellipse cx="-8" cy="0" rx="10" ry="4" fill="#F59E0B" opacity="0.6" filter={`url(#missile-blur-${id})`}>
+              <animate attributeName="rx" values="8;14;8" dur="0.15s" repeatCount="10" />
+            </ellipse>
+            {/* Outer glow */}
+            <circle cx="0" cy="0" r="14" fill="#EF4444" opacity="0.2" filter={`url(#missile-blur-${id})`}>
+              <animate attributeName="opacity" from="0.25" to="0" begin="1.4s" dur="0.2s" fill="freeze" />
+            </circle>
+            {/* Bright core */}
+            <circle cx="0" cy="0" r="5" fill="#FF6B6B" opacity="0.95">
+              <animate attributeName="r" values="4;6;4" dur="0.2s" repeatCount="7" />
+              <animate attributeName="opacity" from="1" to="0" begin="1.4s" dur="0.2s" fill="freeze" />
+            </circle>
+            {/* White hot center */}
+            <circle cx="2" cy="0" r="2.5" fill="#FFFFFF" opacity="0.8">
+              <animate attributeName="opacity" from="0.9" to="0" begin="1.4s" dur="0.1s" fill="freeze" />
+            </circle>
+          </g>
+          {/* IMPACT — large explosion */}
+          <circle cx={x} cy={y} r="3" fill="#FFFFFF" opacity="0">
+            <animate attributeName="r" from="3" to="20" begin="1.4s" dur="0.15s" fill="freeze" />
+            <animate attributeName="opacity" from="0" to="1" begin="1.4s" dur="0.05s" fill="freeze" />
+            <animate attributeName="opacity" from="1" to="0" begin="1.5s" dur="0.2s" fill="freeze" />
           </circle>
-          <path d={`M${fromX},${fromY} Q${midX},${midY} ${x},${y}`}
-            fill="none" stroke="#EF4444" strokeWidth="1" strokeDasharray="6 3" opacity="0.4">
-            <animate attributeName="opacity" from="0.5" to="0" dur="1.5s" fill="freeze" />
-          </path>
-          <circle cx={x} cy={y} r="2" fill="#FF6B6B" opacity="0">
-            <animate attributeName="r" from="2" to="20" begin="1.1s" dur="0.4s" fill="freeze" />
-            <animate attributeName="opacity" from="0" to="0.6" begin="1.1s" dur="0.1s" fill="freeze" />
-            <animate attributeName="opacity" from="0.6" to="0" begin="1.2s" dur="0.3s" fill="freeze" />
+          <circle cx={x} cy={y} r="5" fill="#FF6B6B" opacity="0">
+            <animate attributeName="r" from="5" to="35" begin="1.45s" dur="0.4s" fill="freeze" />
+            <animate attributeName="opacity" from="0" to="0.8" begin="1.45s" dur="0.1s" fill="freeze" />
+            <animate attributeName="opacity" from="0.8" to="0" begin="1.65s" dur="0.4s" fill="freeze" />
+          </circle>
+          {/* Shockwave ring */}
+          <circle cx={x} cy={y} r="8" fill="none" stroke="#EF4444" strokeWidth="3" opacity="0">
+            <animate attributeName="r" from="8" to="45" begin="1.5s" dur="0.5s" fill="freeze" />
+            <animate attributeName="opacity" from="0" to="0.7" begin="1.5s" dur="0.1s" fill="freeze" />
+            <animate attributeName="opacity" from="0.7" to="0" begin="1.75s" dur="0.3s" fill="freeze" />
           </circle>
         </g>
       )
     }
-    case 'nuke_blast':
+    case 'nuke_blast': {
+      const hasTrajectory = fromX !== undefined
+      const nukePathId = `nuke-path-${id}`
+      const nukeDist = hasTrajectory ? Math.sqrt((x - fromX) ** 2 + (y - fromY) ** 2) : 0
+      const nukeArc = Math.max(140, nukeDist * 0.6)
+      const nukeMidX = hasTrajectory ? (fromX + x) / 2 : x
+      const nukeMidY = hasTrajectory ? Math.min(fromY, y) - nukeArc : y - 140
+      const nukePathD = hasTrajectory ? `M${fromX},${fromY} Q${nukeMidX},${nukeMidY} ${x},${y}` : ''
+      const impactDelay = hasTrajectory ? 2.3 : 0
+      const impactS = (s) => `${impactDelay + s}s`
       return (
         <g>
-          <circle cx={x} cy={y} r="3" fill="#FBBF24" opacity="0.9">
-            <animate attributeName="r" from="3" to="35" dur="1s" fill="freeze" />
-            <animate attributeName="opacity" from="0.9" to="0" dur="1.2s" fill="freeze" />
+          <defs>
+            <filter id={`nuke-blur-${id}`}><feGaussianBlur stdDeviation="4" /></filter>
+            <filter id={`nuke-bloom-${id}`}><feGaussianBlur stdDeviation="8" /></filter>
+          </defs>
+          {hasTrajectory && (
+            <>
+              <defs>
+                <path id={nukePathId} d={nukePathD} />
+              </defs>
+              {/* ICBM trajectory — thick bright yellow */}
+              <path d={nukePathD} fill="none" stroke="#FBBF24" strokeWidth="3" strokeDasharray="16 8" opacity="0">
+                <animate attributeName="opacity" from="0" to="0.7" dur="0.2s" fill="freeze" />
+                <animate attributeName="opacity" from="0.7" to="0" begin={impactS(0.5)} dur="1s" fill="freeze" />
+              </path>
+              {/* Wide glow behind trajectory */}
+              <path d={nukePathD} fill="none" stroke="#F59E0B" strokeWidth="14" opacity="0" filter={`url(#nuke-blur-${id})`}>
+                <animate attributeName="opacity" from="0" to="0.25" dur="0.2s" fill="freeze" />
+                <animate attributeName="opacity" from="0.25" to="0" begin={impactS(0.3)} dur="0.8s" fill="freeze" />
+              </path>
+              {/* ICBM warhead */}
+              <g>
+                <animateMotion dur="2.2s" fill="freeze" rotate="auto">
+                  <mpath href={`#${nukePathId}`} />
+                </animateMotion>
+                {/* Massive engine flame */}
+                <ellipse cx="-12" cy="0" rx="16" ry="6" fill="#F59E0B" opacity="0.7" filter={`url(#nuke-blur-${id})`}>
+                  <animate attributeName="rx" values="12;20;12" dur="0.1s" repeatCount="22" />
+                </ellipse>
+                {/* Outer glow — very large */}
+                <circle cx="0" cy="0" r="18" fill="#FBBF24" opacity="0.2" filter={`url(#nuke-blur-${id})`}>
+                  <animate attributeName="opacity" from="0.3" to="0" begin="2.1s" dur="0.2s" fill="freeze" />
+                </circle>
+                {/* Bright warhead core */}
+                <circle cx="0" cy="0" r="7" fill="#FBBF24" opacity="0.95">
+                  <animate attributeName="r" values="5;8;5" dur="0.15s" repeatCount="15" />
+                  <animate attributeName="opacity" from="1" to="0" begin="2.1s" dur="0.2s" fill="freeze" />
+                </circle>
+                {/* White hot tip */}
+                <circle cx="3" cy="0" r="3" fill="#FFFFFF" opacity="0.9">
+                  <animate attributeName="opacity" from="1" to="0" begin="2.1s" dur="0.1s" fill="freeze" />
+                </circle>
+              </g>
+            </>
+          )}
+          {/* === NUCLEAR DETONATION (reduced) === */}
+          {/* Blinding white flash */}
+          <circle cx={x} cy={y} r="2" fill="#FFFFFF" opacity="0">
+            <animate attributeName="r" from="2" to="35" begin={impactS(0)} dur="0.2s" fill="freeze" />
+            <animate attributeName="opacity" from="0" to="1" begin={impactS(0)} dur="0.05s" fill="freeze" />
+            <animate attributeName="opacity" from="1" to="0" begin={impactS(0.15)} dur="0.3s" fill="freeze" />
           </circle>
-          <circle cx={x} cy={y} r="5" fill="none" stroke="#EF4444" strokeWidth="2" opacity="0.7">
-            <animate attributeName="r" from="5" to="50" dur="1.5s" fill="freeze" />
-            <animate attributeName="opacity" from="0.7" to="0" dur="1.5s" fill="freeze" />
+          {/* Fireball */}
+          <circle cx={x} cy={y} r="5" fill="#FBBF24" opacity="0">
+            <animate attributeName="r" from="5" to="30" begin={impactS(0.05)} dur="0.6s" fill="freeze" />
+            <animate attributeName="opacity" from="0" to="0.9" begin={impactS(0.05)} dur="0.1s" fill="freeze" />
+            <animate attributeName="opacity" from="0.9" to="0" begin={impactS(0.4)} dur="0.6s" fill="freeze" />
           </circle>
-          {[0.3, 0.6, 0.9].map((delay, i) => (
-            <circle key={i} cx={x} cy={y} r="10" fill="none" stroke="#22C55E" strokeWidth="0.8" opacity="0">
-              <animate attributeName="r" from="10" to="45" begin={`${delay}s`} dur="1s" fill="freeze" />
-              <animate attributeName="opacity" from="0.5" to="0" begin={`${delay}s`} dur="1s" fill="freeze" />
+          {/* Fireball bloom glow */}
+          <circle cx={x} cy={y} r="8" fill="#F59E0B" opacity="0" filter={`url(#nuke-bloom-${id})`}>
+            <animate attributeName="r" from="8" to="28" begin={impactS(0.05)} dur="0.6s" fill="freeze" />
+            <animate attributeName="opacity" from="0" to="0.4" begin={impactS(0.05)} dur="0.1s" fill="freeze" />
+            <animate attributeName="opacity" from="0.4" to="0" begin={impactS(0.4)} dur="0.5s" fill="freeze" />
+          </circle>
+          {/* Shockwave ring */}
+          <circle cx={x} cy={y} r="8" fill="none" stroke="#EF4444" strokeWidth="3" opacity="0">
+            <animate attributeName="r" from="8" to="42" begin={impactS(0.1)} dur="0.7s" fill="freeze" />
+            <animate attributeName="opacity" from="0" to="0.7" begin={impactS(0.1)} dur="0.1s" fill="freeze" />
+            <animate attributeName="opacity" from="0.7" to="0" begin={impactS(0.5)} dur="0.5s" fill="freeze" />
+          </circle>
+          {/* Radiation rings — reduced to 2 */}
+          {[0.3, 0.7].map((delay, i) => (
+            <circle key={i} cx={x} cy={y} r="12" fill="none" stroke="#22C55E" strokeWidth="1.5" opacity="0">
+              <animate attributeName="r" from="12" to="40" begin={impactS(delay)} dur="0.6s" fill="freeze" />
+              <animate attributeName="opacity" from="0" to="0.4" begin={impactS(delay)} dur="0.1s" fill="freeze" />
+              <animate attributeName="opacity" from="0.4" to="0" begin={impactS(delay + 0.3)} dur="0.4s" fill="freeze" />
             </circle>
           ))}
+          {/* Debris — reduced spread */}
+          {[0, 60, 120, 180, 240, 300].map((angle, i) => {
+            const rad = angle * Math.PI / 180
+            const endX = x + Math.cos(rad) * 30
+            const endY = y + Math.sin(rad) * 30
+            return (
+              <circle key={`d-${i}`} cx={x} cy={y} r="2" fill={i % 2 === 0 ? '#FBBF24' : '#EF4444'} opacity="0">
+                <animate attributeName="cx" from={x} to={endX} begin={impactS(0.1)} dur="0.5s" fill="freeze" />
+                <animate attributeName="cy" from={y} to={endY} begin={impactS(0.1)} dur="0.5s" fill="freeze" />
+                <animate attributeName="opacity" from="0" to="0.8" begin={impactS(0.1)} dur="0.1s" fill="freeze" />
+                <animate attributeName="opacity" from="0.8" to="0" begin={impactS(0.4)} dur="0.3s" fill="freeze" />
+              </circle>
+            )
+          })}
         </g>
       )
+    }
     case 'combat_flash':
       return (
         <circle cx={x} cy={y} r="2" fill="#F59E0B" opacity="0.8">
@@ -1397,9 +1506,11 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
           )
         })()}
 
-        {/* Animation overlay */}
+        {/* Animation overlay — each wrapped in nested <svg> for independent SMIL time container */}
         {mapAnimations && mapAnimations.map(anim => (
-          <MapAnimation key={anim.id} anim={anim} />
+          <svg key={anim.id} overflow="visible">
+            <MapAnimation anim={anim} />
+          </svg>
         ))}
       </svg>
 
@@ -1843,7 +1954,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
     })
     const durations = {
       deploy_pulse: 800, build_flash: 600, shield_dome: 1000,
-      drone_fly: 1200, missile_arc: 1500, nuke_blast: 2000,
+      drone_fly: 2000, missile_arc: 2500, nuke_blast: 4000,
       combat_flash: 500, conquer_glow: 1200, enemy_attack: 800, enemy_reinforce: 600,
     }
     setTimeout(() => {
@@ -2273,121 +2384,129 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       if (item.action === 'strike') {
         // Drone Strike: kill 1-3 troops
         if (selectedItem === 'drone') {
+          // Immediately: launch sound + animation + deduct cost
           SFX.drone()
           addMapAnimation('drone_fly', 'usa', id)
-          const shielded = territory.shield
-          if (shielded) {
-            setGame(prev => ({
-              ...prev,
-              warisk: prev.warisk - cost, halveCost: false,
-              totalDrones: prev.totalDrones + 1,
-              territories: {
-                ...prev.territories,
-                [id]: { ...prev.territories[id], shield: false },
-              },
-              terminalLog: addTerminalEntry(prev.terminalLog, 'player', `[T${String(prev.turn).padStart(2,'0')} STRIKE] Drone intercepted by ${territory.name}'s shield`),
-            }))
-            showFeedback(`Drone intercepted by ${territory.name}'s shield. Shield destroyed.`)
-            setSelectedItem(null)
-            return
-          }
-          const kills = Math.min(randInt(1, 2), territory.troops)
-          const droneConquered = territory.troops - kills <= 0
-          setGame(prev => ({
-            ...prev,
-            warisk: prev.warisk - cost, halveCost: false,
-            totalDrones: prev.totalDrones + 1,
-            conqueredCount: droneConquered ? prev.conqueredCount + 1 : prev.conqueredCount,
-            territories: {
-              ...prev.territories,
-              [id]: {
-                ...prev.territories[id],
-                troops: droneConquered ? 1 : prev.territories[id].troops - kills,
-                ...(droneConquered ? { owner: 'player', shield: false } : {}),
-              },
-            },
-            terminalLog: addTerminalEntry(prev.terminalLog, 'player', `[T${String(prev.turn).padStart(2,'0')} STRIKE] Drone strike on ${territory.name}: ${kills} troops killed${droneConquered ? ' — CONQUERED!' : ''}`),
-          }))
-          showFeedback(droneConquered ? `Drone eliminated all troops in ${territory.name}! CONQUERED!` : `Drone strike on ${territory.name}! -${kills} troops. "Surgical precision."`)
-          SFX.explosion()
-          if (droneConquered) triggerShake()
+          setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: false, totalDrones: prev.totalDrones + 1 }))
           setSelectedItem(null)
+          // Delayed: effects sync with animation impact (~1300ms)
+          const tName = territory.name
+          const wasShielded = territory.shield
+          setTimeout(() => {
+            SFX.droneImpact()
+            setGame(prev => {
+              const live = prev.territories[id]
+              if (!live || live.owner === 'player') return prev // already conquered
+              if (wasShielded) {
+                showFeedback(`Drone intercepted by ${tName}'s shield. Shield destroyed.`)
+                return {
+                  ...prev,
+                  territories: { ...prev.territories, [id]: { ...live, shield: false } },
+                  terminalLog: addTerminalEntry(prev.terminalLog, 'player', `[T${String(prev.turn).padStart(2,'0')} STRIKE] Drone intercepted by ${tName}'s shield`),
+                }
+              }
+              const kills = Math.min(randInt(1, 2), live.troops)
+              const conquered = live.troops - kills <= 0
+              if (conquered) triggerShake()
+              showFeedback(conquered ? `Drone eliminated all troops in ${tName}! CONQUERED!` : `Drone strike on ${tName}! -${kills} troops. "Surgical precision."`)
+              return {
+                ...prev,
+                conqueredCount: conquered ? prev.conqueredCount + 1 : prev.conqueredCount,
+                territories: {
+                  ...prev.territories,
+                  [id]: {
+                    ...live,
+                    troops: conquered ? 1 : live.troops - kills,
+                    ...(conquered ? { owner: 'player', shield: false } : {}),
+                  },
+                },
+                terminalLog: addTerminalEntry(prev.terminalLog, 'player', `[T${String(prev.turn).padStart(2,'0')} STRIKE] Drone strike on ${tName}: ${kills} troops killed${conquered ? ' — CONQUERED!' : ''}`),
+              }
+            })
+          }, 1300)
           return
         }
 
         // Tactical Missile: kill 2-5 troops
         if (selectedItem === 'missile') {
+          // Immediately: launch sound + explosion audio + animation + deduct cost
           SFX.missileSound()
+          SFX.explosion(2000) // starts now, fades out 0.5s after impact (1500ms flight + 500ms)
           addMapAnimation('missile_arc', 'usa', id)
-          const shielded = territory.shield
-          if (shielded) {
-            setGame(prev => ({
-              ...prev,
-              warisk: prev.warisk - cost, halveCost: false,
-              freeMissile: false,
-              totalMissiles: prev.totalMissiles + 1,
-              territories: {
-                ...prev.territories,
-                [id]: { ...prev.territories[id], shield: false },
-              },
-              terminalLog: addTerminalEntry(prev.terminalLog, 'player', `[T${String(prev.turn).padStart(2,'0')} STRIKE] Missile intercepted by ${territory.name}'s shield`),
-            }))
-            showFeedback(`Missile intercepted by ${territory.name}'s shield. Shield destroyed.`)
-            setSelectedItem(null)
-            return
-          }
-          const kills = Math.min(randInt(3, 5), territory.troops)
-          const missileConquered = territory.troops - kills <= 0
-          setGame(prev => ({
-            ...prev,
-            warisk: prev.warisk - cost, halveCost: false,
-            freeMissile: false,
-            totalMissiles: prev.totalMissiles + 1,
-            conqueredCount: missileConquered ? prev.conqueredCount + 1 : prev.conqueredCount,
-            territories: {
-              ...prev.territories,
-              [id]: {
-                ...prev.territories[id],
-                troops: missileConquered ? 1 : prev.territories[id].troops - kills,
-                ...(missileConquered ? { owner: 'player', shield: false } : {}),
-              },
-            },
-            terminalLog: addTerminalEntry(prev.terminalLog, 'player', `[T${String(prev.turn).padStart(2,'0')} STRIKE] Missile strike on ${territory.name}: ${kills} troops killed${missileConquered ? ' — CONQUERED!' : ''}`),
-          }))
-          showFeedback(missileConquered ? `Missile destroyed all troops in ${territory.name}! CONQUERED!` : `Missile strikes ${territory.name}! -${kills} troops. "Collateral damage is a feature."`)
-          SFX.explosion()
-          triggerShake()
+          setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: false, freeMissile: false, totalMissiles: prev.totalMissiles + 1 }))
           setSelectedItem(null)
+          // Delayed: effects sync with animation impact (~1500ms)
+          const tName = territory.name
+          const wasShielded = territory.shield
+          setTimeout(() => {
+            SFX.missileImpact()
+            triggerShake()
+            setGame(prev => {
+              const live = prev.territories[id]
+              if (!live || live.owner === 'player') return prev // already conquered
+              if (wasShielded) {
+                showFeedback(`Missile intercepted by ${tName}'s shield. Shield destroyed.`)
+                return {
+                  ...prev,
+                  territories: { ...prev.territories, [id]: { ...live, shield: false } },
+                  terminalLog: addTerminalEntry(prev.terminalLog, 'player', `[T${String(prev.turn).padStart(2,'0')} STRIKE] Missile intercepted by ${tName}'s shield`),
+                }
+              }
+              const kills = Math.min(randInt(3, 5), live.troops)
+              const conquered = live.troops - kills <= 0
+              showFeedback(conquered ? `Missile destroyed all troops in ${tName}! CONQUERED!` : `Missile strikes ${tName}! -${kills} troops. "Collateral damage is a feature."`)
+              return {
+                ...prev,
+                conqueredCount: conquered ? prev.conqueredCount + 1 : prev.conqueredCount,
+                territories: {
+                  ...prev.territories,
+                  [id]: {
+                    ...live,
+                    troops: conquered ? 1 : live.troops - kills,
+                    ...(conquered ? { owner: 'player', shield: false } : {}),
+                  },
+                },
+                terminalLog: addTerminalEntry(prev.terminalLog, 'player', `[T${String(prev.turn).padStart(2,'0')} STRIKE] Missile strike on ${tName}: ${kills} troops killed${conquered ? ' — CONQUERED!' : ''}`),
+              }
+            })
+          }, 1500)
           return
         }
 
         // Nuclear Strike: kills ALL troops, irradiates for 3 turns, destroys buildings
         if (selectedItem === 'nuke') {
-          const troopsBefore = territory.troops
-          setGame(prev => ({
-            ...prev,
-            warisk: prev.warisk - cost, halveCost: false,
-            freeNuke: false,
-            totalNukes: prev.totalNukes + 1,
-            conqueredCount: prev.territories[id].owner === 'enemy' ? prev.conqueredCount + 1 : prev.conqueredCount,
-            territories: {
-              ...prev.territories,
-              [id]: {
-                ...prev.territories[id],
-                troops: 1,
-                owner: 'player',
-                shield: false,
-                building: null,
-                irradiated: 3,
-              },
-            },
-            terminalLog: addTerminalEntry(prev.terminalLog, 'player', `[T${String(prev.turn).padStart(2,'0')} STRIKE] ☢ NUCLEAR STRIKE on ${territory.name}: ${troopsBefore} troops eliminated — CONQUERED!`),
-          }))
-          showFeedback(`NUCLEAR STRIKE on ${territory.name}! -${troopsBefore} troops. Irradiated for 3 turns. "Democracy has been delivered."`)
-          SFX.nuke()
-          addMapAnimation('nuke_blast', null, id)
-          triggerShake()
+          // Immediately: launch sound + animation + deduct cost
+          SFX.nuke(3300) // starts now, fades out 1s after impact (2300ms flight + 1000ms)
+          addMapAnimation('nuke_blast', 'usa', id)
+          setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: false, freeNuke: false, totalNukes: prev.totalNukes + 1 }))
           setSelectedItem(null)
+          // Delayed: effects sync with ICBM impact (~2300ms)
+          const tName = territory.name
+          setTimeout(() => {
+            triggerShake()
+            setGame(prev => {
+              const live = prev.territories[id]
+              if (!live || live.owner === 'player') return prev // already conquered
+              const troopsNow = live.troops
+              showFeedback(`NUCLEAR STRIKE on ${tName}! -${troopsNow} troops. Irradiated for 3 turns. "Democracy has been delivered."`)
+              return {
+                ...prev,
+                conqueredCount: prev.conqueredCount + 1,
+                territories: {
+                  ...prev.territories,
+                  [id]: {
+                    ...live,
+                    troops: 1,
+                    owner: 'player',
+                    shield: false,
+                    building: null,
+                    irradiated: 3,
+                  },
+                },
+                terminalLog: addTerminalEntry(prev.terminalLog, 'player', `[T${String(prev.turn).padStart(2,'0')} STRIKE] ☢ NUCLEAR STRIKE on ${tName}: ${troopsNow} troops eliminated — CONQUERED!`),
+              }
+            })
+          }, 2300)
           return
         }
       }
@@ -3344,7 +3463,7 @@ function addLeaderboardEntry(entry) {
     const board = getLeaderboard()
     board.push(entry)
     board.sort((a, b) => a.turns - b.turns)
-    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(board.slice(0, 10)))
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(board.slice(0, 100)))
   } catch {}
 }
 
