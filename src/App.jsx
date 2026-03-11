@@ -264,6 +264,38 @@ const SFX = (() => {
       fg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 1.4)
       fs.connect(ff).connect(fg).connect(c.destination); fs.start(c.currentTime + 0.2)
     }),
+    nukeLaunch: () => play(c => {
+      // Heavy launch burst (0-0.3s)
+      const wBuf = c.createBuffer(1, c.sampleRate * 0.25, c.sampleRate)
+      const wd = wBuf.getChannelData(0)
+      for (let i = 0; i < wd.length; i++) wd[i] = (Math.random() * 2 - 1) * 0.6
+      const ws = c.createBufferSource(), wg = c.createGain(), wf = c.createBiquadFilter()
+      ws.buffer = wBuf; wf.type = 'lowpass'; wf.frequency.setValueAtTime(300, c.currentTime)
+      wf.frequency.exponentialRampToValueAtTime(2000, c.currentTime + 0.25); wf.Q.value = 1
+      wg.gain.setValueAtTime(0.1, c.currentTime)
+      wg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3)
+      ws.connect(wf).connect(wg).connect(c.destination); ws.start()
+      // Rising ICBM tone (0-0.5s)
+      const o = c.createOscillator(), g = c.createGain()
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(120, c.currentTime)
+      o.frequency.exponentialRampToValueAtTime(1500, c.currentTime + 0.5)
+      g.gain.setValueAtTime(0.06, c.currentTime)
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5)
+      o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.5)
+      // Long flight whoosh — covers full 2.3s ICBM flight (0.3s-2.2s)
+      const flightBuf = c.createBuffer(1, c.sampleRate * 2, c.sampleRate)
+      const fd = flightBuf.getChannelData(0)
+      for (let i = 0; i < fd.length; i++) fd[i] = (Math.random() * 2 - 1)
+      const fs = c.createBufferSource(), fg = c.createGain(), ff = c.createBiquadFilter()
+      fs.buffer = flightBuf; ff.type = 'bandpass'; ff.frequency.value = 400; ff.Q.value = 0.8
+      ff.frequency.setValueAtTime(400, c.currentTime + 0.3)
+      ff.frequency.linearRampToValueAtTime(900, c.currentTime + 2.2)
+      fg.gain.setValueAtTime(0, c.currentTime)
+      fg.gain.linearRampToValueAtTime(0.05, c.currentTime + 0.5)
+      fg.gain.setValueAtTime(0.05, c.currentTime + 1.8)
+      fg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 2.2)
+      fs.connect(ff).connect(fg).connect(c.destination); fs.start(c.currentTime + 0.3)
+    }),
     deploy: () => play(c => {
       for (let step = 0; step < 2; step++) {
         const o = c.createOscillator(), g = c.createGain()
@@ -2523,7 +2555,6 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           const tName = territory.name
           const wasShielded = territory.shield
           scheduleTimeout(() => {
-            SFX.explosion()
             SFX.missileImpact()
             triggerShake()
             setGame(prev => {
@@ -2560,8 +2591,8 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
 
         // Nuclear Strike: kills ALL troops, irradiates for 3 turns, destroys buildings
         if (selectedItem === 'nuke') {
-          // Immediately: launch sound + animation + deduct cost
-          SFX.missileSound()
+          // Immediately: ICBM launch sound + animation + deduct cost
+          SFX.nukeLaunch()
           addMapAnimation('nuke_blast', 'usa', id)
           setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: false, freeNuke: false, totalNukes: prev.totalNukes + 1 }))
           setSelectedItem(null)
