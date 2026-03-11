@@ -1695,7 +1695,7 @@ function DiceCombatOverlay({ data, onDone }) {
     if (!data) return
     // Rolling phase: random dice for 600ms
     let frame = 0
-    let doneTimer = null
+    const timers = { done: null }
     const interval = setInterval(() => {
       setDisplayDice({
         a: Array.from({ length: data.aRolls.length }, () => randInt(1, 6)),
@@ -1706,10 +1706,10 @@ function DiceCombatOverlay({ data, onDone }) {
         clearInterval(interval)
         setDisplayDice({ a: data.aRolls, d: data.dRolls })
         setPhase('result')
-        doneTimer = setTimeout(() => onDoneRef.current(), 1500)
+        timers.done = setTimeout(() => onDoneRef.current(), 1500)
       }
     }, 75)
-    return () => { clearInterval(interval); if (doneTimer) clearTimeout(doneTimer) }
+    return () => { clearInterval(interval); if (timers.done) clearTimeout(timers.done) }
   }, [data])
 
   if (!data) return null
@@ -1789,11 +1789,12 @@ function EventPopup({ event, onDone }) {
   onDoneRef.current = onDone
 
   useEffect(() => {
+    let innerTimer = null
     const t = setTimeout(() => {
       setVisible(false)
-      setTimeout(() => onDoneRef.current(), 300)
+      innerTimer = setTimeout(() => onDoneRef.current(), 300)
     }, 2500)
-    return () => clearTimeout(t)
+    return () => { clearTimeout(t); if (innerTimer) clearTimeout(innerTimer) }
   }, [])
 
   if (!event) return null
@@ -2101,7 +2102,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
     }
     setMapAnimations(prev => {
       const active = [...prev, anim]
-      return active.length > 4 ? active.slice(-4) : active
+      return active.length > 8 ? active.slice(-8) : active
     })
     // Cleanup duration: flight + impact animation tail
     const staticDurations = {
@@ -2403,7 +2404,6 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         const msg = territory.conqueredMsg || pickRandom(CONQUEST_MESSAGES).replace('{country}', territory.name)
         setGame(prev => ({
           ...prev,
-          conqueredCount: prev.conqueredCount + 1,
           territories: {
             ...prev.territories,
             [attackFrom]: { ...prev.territories[attackFrom], troops: Math.max(1, newATroops - moveTroops) },
@@ -2473,7 +2473,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         addMapAnimation('deploy_pulse', null, id)
         setGame(prev => ({
           ...prev,
-          warisk: prev.warisk - cost, halveCost: false,
+          warisk: prev.warisk - cost, halveCost: cost > 0 ? false : prev.halveCost,
           totalTroopsDeployed: prev.totalTroopsDeployed + 1,
           territories: {
             ...prev.territories,
@@ -2500,7 +2500,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         addMapAnimation('build_flash', null, id)
         setGame(prev => ({
           ...prev,
-          warisk: prev.warisk - cost, halveCost: false,
+          warisk: prev.warisk - cost, halveCost: cost > 0 ? false : prev.halveCost,
           territories: {
             ...prev.territories,
             [id]: { ...prev.territories[id], building: buildingType },
@@ -2524,7 +2524,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         addMapAnimation('shield_dome', null, id)
         setGame(prev => ({
           ...prev,
-          warisk: prev.warisk - cost, halveCost: false,
+          warisk: prev.warisk - cost, halveCost: cost > 0 ? false : prev.halveCost,
           territories: {
             ...prev.territories,
             [id]: { ...prev.territories[id], shield: true },
@@ -2551,13 +2551,13 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       }
 
       if (item.action === 'strike') {
-        // Drone Strike: kill 1-3 troops
+        // Drone Strike: kill 1-2 troops
         if (selectedItem === 'drone') {
           // Immediately: launch sound + animation + deduct cost
           const droneAudio = SFX.drone()
           const { flightMs } = addMapAnimation('drone_fly', 'usa', id)
           const droneImpactMs = flightMs || 1300
-          setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: false, totalDrones: prev.totalDrones + 1 }))
+          setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: cost > 0 ? false : prev.halveCost, totalDrones: prev.totalDrones + 1 }))
           setSelectedItem(null)
           // Delayed: stop fly sound + play impact at exact moment of animation hit
           const tName = territory.name
@@ -2581,7 +2581,6 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
               showFeedback(conquered ? `Drone eliminated all troops in ${tName}! CONQUERED!` : `Drone strike on ${tName}! -${kills} troops. "Surgical precision."`)
               return {
                 ...prev,
-                conqueredCount: conquered ? prev.conqueredCount + 1 : prev.conqueredCount,
                 territories: {
                   ...prev.territories,
                   [id]: {
@@ -2597,13 +2596,13 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           return
         }
 
-        // Tactical Missile: kill 2-5 troops
+        // Tactical Missile: kill 3-5 troops
         if (selectedItem === 'missile') {
           // Immediately: animation + launch sound adapted to flight distance
           const { flightMs: missileFlightMs } = addMapAnimation('missile_arc', 'usa', id)
           const missileImpactMs = missileFlightMs || 1500
           SFX.missileSound(missileImpactMs / 1000)
-          setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: false, freeMissile: false, totalMissiles: prev.totalMissiles + 1 }))
+          setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: cost > 0 ? false : prev.halveCost, freeMissile: false, totalMissiles: prev.totalMissiles + 1 }))
           setSelectedItem(null)
           // Delayed: impact sounds + effects sync with animation
           const tName = territory.name
@@ -2626,7 +2625,6 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
               showFeedback(conquered ? `Missile destroyed all troops in ${tName}! CONQUERED!` : `Missile strikes ${tName}! -${kills} troops. "Collateral damage is a feature."`)
               return {
                 ...prev,
-                conqueredCount: conquered ? prev.conqueredCount + 1 : prev.conqueredCount,
                 territories: {
                   ...prev.territories,
                   [id]: {
@@ -2648,7 +2646,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           const { flightMs: nukeFlightMs } = addMapAnimation('nuke_blast', 'usa', id)
           const nukeImpactMs = nukeFlightMs || 2300
           SFX.nukeLaunch(nukeImpactMs / 1000)
-          setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: false, freeNuke: false, totalNukes: prev.totalNukes + 1 }))
+          setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: cost > 0 ? false : prev.halveCost, freeNuke: false, totalNukes: prev.totalNukes + 1 }))
           setSelectedItem(null)
           // Delayed: impact sounds + effects sync with ICBM animation
           const tName = territory.name
@@ -2658,11 +2656,18 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
             setGame(prev => {
               const live = prev.territories[id]
               if (!live || live.owner === 'player') return prev // already conquered
+              if (live.shield) {
+                showFeedback(`Nuke intercepted by ${tName}'s shield! Shield destroyed. "Even nukes have limits."`)
+                return {
+                  ...prev,
+                  territories: { ...prev.territories, [id]: { ...live, shield: false } },
+                  terminalLog: addTerminalEntry(prev.terminalLog, 'player', `[T${String(prev.turn).padStart(2,'0')} STRIKE] ☢ Nuke intercepted by ${tName}'s shield`),
+                }
+              }
               const troopsNow = live.troops
               showFeedback(`NUCLEAR STRIKE on ${tName}! -${troopsNow} troops. Irradiated for 3 turns. "Democracy has been delivered."`)
               return {
                 ...prev,
-                conqueredCount: prev.conqueredCount + 1,
                 territories: {
                   ...prev.territories,
                   [id]: {
@@ -2690,7 +2695,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         const bldg = territory.building
         setGame(prev => ({
           ...prev,
-          warisk: prev.warisk - cost, halveCost: false,
+          warisk: prev.warisk - cost, halveCost: cost > 0 ? false : prev.halveCost,
           territories: {
             ...prev.territories,
             [id]: { ...prev.territories[id], building: null },
@@ -2756,6 +2761,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
     const terminalEntries = []
     let recapturedCount = 0
     const t = {} // build updated territories
+    const dirty = new Set() // track which territory IDs the AI modified
     for (const [id, ter] of Object.entries(game.territories)) {
       t[id] = { ...ter }
     }
@@ -2765,6 +2771,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
     for (const [id, ter] of Object.entries(t)) {
       if (ter.owner === 'ally' && ter.cooldown > 0) {
         t[id] = { ...t[id], cooldown: t[id].cooldown - 1 }
+        dirty.add(id)
       }
     }
 
@@ -2774,6 +2781,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       for (const [id, ter] of Object.entries(t)) {
         if (ter.owner === 'enemy' && ter.attackable && ter.irradiated === 0) {
           t[id] = { ...t[id], troops: t[id].troops + 1 }
+          dirty.add(id)
         }
       }
       aiActions.push('Enemy forces reinforced (+1 each)')
@@ -2791,6 +2799,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         const [bid] = pickRandom(buildCandidates)
         const bType = Math.random() < 0.6 ? 'factory' : 'refinery'
         t[bid] = { ...t[bid], building: bType }
+        dirty.add(bid)
         aiActions.push(`${t[bid].name} built a ${bType}. Sanctions might help.`)
         terminalEntries.push({ type: 'enemy', text: `[T${String(tn).padStart(2,'0')} ENEMY] ${t[bid].name} constructed a ${bType}` })
       }
@@ -2804,6 +2813,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       if (shieldCandidates.length > 0) {
         const [sid] = pickRandom(shieldCandidates)
         t[sid] = { ...t[sid], shield: true }
+        dirty.add(sid)
         aiActions.push(`${t[sid].name} deployed a missile shield.`)
         terminalEntries.push({ type: 'enemy', text: `[T${String(tn).padStart(2,'0')} ENEMY] ${t[sid].name} deployed missile shield` })
       }
@@ -2824,12 +2834,14 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         const tid = pickRandom(allTargets)
         if (t[tid].shield) {
           t[tid] = { ...t[tid], shield: false }
+          dirty.add(tid)
           aiActions.push(`Iran launched missile at ${t[tid].name} — Shield absorbed!`)
           terminalEntries.push({ type: 'enemy', text: `[T${String(tn).padStart(2,'0')} ENEMY] Iran missile at ${t[tid].name} — shield absorbed` })
         } else {
           const dmg = Math.min(randInt(1, 3), t[tid].troops)
           if (dmg > 0) {
             t[tid] = { ...t[tid], troops: t[tid].troops - dmg }
+            dirty.add(tid)
             const hl = pickRandom(DEFENSE_HEADLINES).replace('{country}', 'Iran')
             aiActions.push(`${hl} -${dmg} in ${t[tid].name}`)
             terminalEntries.push({ type: 'enemy', text: `[T${String(tn).padStart(2,'0')} ENEMY] Iran attacks ${t[tid].name}: -${dmg} troops` })
@@ -2847,6 +2859,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         const dmg = Math.min(randInt(1, 2), t[tid].troops)
         if (dmg > 0) {
           t[tid] = { ...t[tid], troops: t[tid].troops - dmg }
+          dirty.add(tid)
           aiActions.push(`Iraq strikes ${t[tid].name}! -${dmg} troops`)
           terminalEntries.push({ type: 'enemy', text: `[T${String(tn).padStart(2,'0')} ENEMY] Iraq strikes ${t[tid].name}: -${dmg} troops` })
           addMapAnimation('enemy_attack', null, tid)
@@ -2880,26 +2893,30 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         if (aRolls[i] > dRolls[i]) dLoss++
         else aLoss++
       }
-      const newEnemyTroops = t[id].troops - aLoss
+      const newEnemyTroops = Math.max(1, t[id].troops - aLoss)
       const newPlayerTroops = t[tid].troops - dLoss
       t[id] = { ...t[id], troops: newEnemyTroops }
+      dirty.add(id)
       addMapAnimation('enemy_attack', null, tid)
 
       if (newPlayerTroops <= 0 && tid === 'usa') {
         // USA has fallen!
         t[tid] = { ...t[tid], troops: 0 }
+        dirty.add(tid)
         aiActions.push(`CRITICAL: ${ter.name} has overrun the homeland!`)
         terminalEntries.push({ type: 'enemy', text: `[T${String(tn).padStart(2,'0')} ENEMY] ★ THE HOMELAND HAS FALLEN ★` })
       } else if (newPlayerTroops <= 0) {
         // Enemy recaptures non-USA territory
         recapturedCount++
-        const moveTroops = Math.min(3, newEnemyTroops - 1) || 1
-        t[id] = { ...t[id], troops: newEnemyTroops - moveTroops }
+        const moveTroops = Math.min(3, Math.max(0, newEnemyTroops - 1)) || 1
+        t[id] = { ...t[id], troops: Math.max(1, newEnemyTroops - moveTroops) }
         t[tid] = { ...t[tid], troops: moveTroops, owner: 'enemy', shield: false }
+        dirty.add(id); dirty.add(tid)
         aiActions.push(`ALERT: ${ter.name} recaptured ${t[tid].name}! [${aRolls}] vs [${dRolls}]`)
         terminalEntries.push({ type: 'enemy', text: `[T${String(tn).padStart(2,'0')} ENEMY] ${ter.name} RECAPTURED ${t[tid].name}!` })
       } else {
         t[tid] = { ...t[tid], troops: newPlayerTroops }
+        dirty.add(tid)
         const hl = pickRandom(DEFENSE_HEADLINES).replace('{country}', ter.name)
         aiActions.push(`${hl} [${aRolls}] vs [${dRolls}]`)
         terminalEntries.push({ type: 'enemy', text: `[T${String(tn).padStart(2,'0')} ENEMY] ${ter.name} attacks ${t[tid].name}: You -${dLoss}` })
@@ -2921,6 +2938,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         if (move > 0) {
           t[eid] = { ...t[eid], troops: t[eid].troops - move }
           t[target] = { ...t[target], troops: t[target].troops + move }
+          dirty.add(eid); dirty.add(target)
           terminalEntries.push({ type: 'enemy', text: `[T${String(tn).padStart(2,'0')} ENEMY] ${eter.name} fortifies ${t[target].name} +${move} troops` })
         }
       }
@@ -2939,11 +2957,13 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       terminalEntries.push({ type: 'israel', text: `[T${String(tn).padStart(2,'0')} ISRAEL] ${msg}${israelBonus > 0 ? ` (+Ⓦ${israelBonus})` : ''}` })
     }
 
-    // Apply AI changes + Israel bonus in one call
+    // Apply AI changes + Israel bonus — only merge territories the AI actually modified
+    // to avoid clobbering pending in-flight strike results
+    const aiTerritoryDiff = {}
+    for (const id of dirty) aiTerritoryDiff[id] = t[id]
     setGame(prev => ({
       ...prev,
-      territories: t,
-      conqueredCount: Math.max(0, prev.conqueredCount - recapturedCount),
+      territories: { ...prev.territories, ...aiTerritoryDiff },
       warisk: prev.warisk + israelBonus,
       newsQueue: capNews([...prev.newsQueue, ...aiActions]),
       terminalLog: [...prev.terminalLog, ...terminalEntries].slice(-MAX_TERMINAL),
