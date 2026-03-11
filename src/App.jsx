@@ -2472,11 +2472,12 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           addMapAnimation('drone_fly', 'usa', id)
           setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: false, totalDrones: prev.totalDrones + 1 }))
           setSelectedItem(null)
-          // Delayed: stop fly sound, play impact, sync with animation (~1300ms)
+          // Stop fly sound slightly before impact so browser can release audio channel
+          scheduleTimeout(() => { SFX.stopAudio(droneAudio) }, 1150)
+          // Delayed: play impact + effects sync with animation (~1300ms)
           const tName = territory.name
           const wasShielded = territory.shield
           scheduleTimeout(() => {
-            SFX.stopAudio(droneAudio)
             SFX.droneImpact()
             setGame(prev => {
               const live = prev.territories[id]
