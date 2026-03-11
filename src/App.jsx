@@ -218,20 +218,19 @@ const SFX = (() => {
       audio.play().catch(() => {})
       audio.addEventListener('ended', () => { audio.src = '' })
     },
-    drone: (stopAtMs = 1200) => {
+    drone: () => {
       const audio = new Audio('/drone-fly.mp3')
       audio.volume = 0.2
       audio.play().catch(() => {})
-      // Quick fade-out so launch sound ends cleanly before impact
-      if (stopAtMs > 0) {
-        setTimeout(() => {
-          const fade = setInterval(() => {
-            if (audio.volume > 0.02) audio.volume = Math.max(0, audio.volume - 0.08)
-            else { audio.pause(); audio.src = ''; clearInterval(fade) }
-          }, 30)
-        }, stopAtMs)
-      }
       return audio
+    },
+    stopAudio: (audio) => {
+      if (!audio) return
+      try {
+        audio.pause()
+        audio.currentTime = 0
+        audio.src = ''
+      } catch {}
     },
     missileSound: () => play(c => {
       // Initial launch burst — short explosive whoosh (0-0.2s)
@@ -2469,14 +2468,15 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         // Drone Strike: kill 1-3 troops
         if (selectedItem === 'drone') {
           // Immediately: launch sound + animation + deduct cost
-          SFX.drone()
+          const droneAudio = SFX.drone()
           addMapAnimation('drone_fly', 'usa', id)
           setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: false, totalDrones: prev.totalDrones + 1 }))
           setSelectedItem(null)
-          // Delayed: effects sync with animation impact (~1300ms)
+          // Delayed: stop fly sound, play impact, sync with animation (~1300ms)
           const tName = territory.name
           const wasShielded = territory.shield
           scheduleTimeout(() => {
+            SFX.stopAudio(droneAudio)
             SFX.droneImpact()
             setGame(prev => {
               const live = prev.territories[id]
