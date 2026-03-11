@@ -35,11 +35,12 @@ function useIsMobile(breakpoint = 640) {
       setIsMobile(window.innerWidth < breakpoint)
       setIsLandscape(window.innerHeight < 500 && window.innerWidth > window.innerHeight)
     }
+    const onOrientation = () => setTimeout(check, 150)
     window.addEventListener('resize', check)
-    window.addEventListener('orientationchange', () => setTimeout(check, 150))
+    window.addEventListener('orientationchange', onOrientation)
     return () => {
       window.removeEventListener('resize', check)
-      window.removeEventListener('orientationchange', check)
+      window.removeEventListener('orientationchange', onOrientation)
     }
   }, [breakpoint])
 
@@ -2560,14 +2561,13 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           setSelectedItem(null)
           // Delayed: stop fly sound + play impact at exact moment of animation hit
           const tName = territory.name
-          const wasShielded = territory.shield
           scheduleTimeout(() => {
             SFX.stopAudio(droneAudio)
             SFX.droneImpact()
             setGame(prev => {
               const live = prev.territories[id]
               if (!live || live.owner === 'player') return prev // already conquered
-              if (wasShielded) {
+              if (live.shield) {
                 showFeedback(`Drone intercepted by ${tName}'s shield. Shield destroyed.`)
                 return {
                   ...prev,
@@ -2607,14 +2607,13 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           setSelectedItem(null)
           // Delayed: impact sounds + effects sync with animation
           const tName = territory.name
-          const wasShielded = territory.shield
           scheduleTimeout(() => {
             SFX.missileImpact()
             triggerShake()
             setGame(prev => {
               const live = prev.territories[id]
               if (!live || live.owner === 'player') return prev // already conquered
-              if (wasShielded) {
+              if (live.shield) {
                 showFeedback(`Missile intercepted by ${tName}'s shield. Shield destroyed.`)
                 return {
                   ...prev,
@@ -3745,6 +3744,8 @@ export default function App() {
   const resumeGame = useCallback(() => {
     const saved = loadGame()
     if (saved) {
+      // If saved during enemy_turn, advance to build to avoid replaying AI
+      if (saved.phase === 'enemy_turn') saved.phase = 'build'
       setGame(saved)
       setScreen('game')
     } else {
