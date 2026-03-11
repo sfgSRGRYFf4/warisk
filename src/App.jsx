@@ -212,12 +212,34 @@ const SFX = (() => {
       audio.play().catch(() => {})
       audio.addEventListener('ended', () => { audio.src = '' })
     },
-    droneImpact: () => {
-      const audio = new Audio('/drone-explosion.mp3')
-      audio.volume = 0.25
-      audio.play().catch(() => {})
-      audio.addEventListener('ended', () => { audio.src = '' })
-    },
+    droneImpact: () => play(c => {
+      // Procedural explosion — avoids HTML Audio channel conflicts on mobile
+      // Low rumble
+      const buf = c.createBuffer(1, c.sampleRate * 0.4, c.sampleRate)
+      const d = buf.getChannelData(0)
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 1.2)
+      const s = c.createBufferSource(), sg = c.createGain(), sf = c.createBiquadFilter()
+      s.buffer = buf; sf.type = 'lowpass'; sf.frequency.value = 800
+      sg.gain.setValueAtTime(0.2, c.currentTime)
+      sg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.4)
+      s.connect(sf).connect(sg).connect(c.destination); s.start()
+      // Impact thud
+      const o = c.createOscillator(), g = c.createGain()
+      o.type = 'sine'; o.frequency.setValueAtTime(120, c.currentTime)
+      o.frequency.exponentialRampToValueAtTime(30, c.currentTime + 0.2)
+      g.gain.setValueAtTime(0.15, c.currentTime)
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.25)
+      o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.25)
+      // High crackle
+      const hBuf = c.createBuffer(1, c.sampleRate * 0.15, c.sampleRate)
+      const hd = hBuf.getChannelData(0)
+      for (let i = 0; i < hd.length; i++) hd[i] = (Math.random() * 2 - 1) * 0.4
+      const hs = c.createBufferSource(), hg = c.createGain(), hf = c.createBiquadFilter()
+      hs.buffer = hBuf; hf.type = 'highpass'; hf.frequency.value = 2000
+      hg.gain.setValueAtTime(0.08, c.currentTime)
+      hg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.15)
+      hs.connect(hf).connect(hg).connect(c.destination); hs.start()
+    }),
     drone: () => {
       const audio = new Audio('/drone-fly.mp3')
       audio.volume = 0.2
@@ -2536,12 +2558,11 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           const droneImpactMs = flightMs || 1300
           setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: false, totalDrones: prev.totalDrones + 1 }))
           setSelectedItem(null)
-          // Stop fly sound 150ms before impact so browser can release audio channel
-          scheduleTimeout(() => { SFX.stopAudio(droneAudio) }, droneImpactMs - 150)
-          // Delayed: play impact + effects sync with animation
+          // Delayed: stop fly sound + play impact at exact moment of animation hit
           const tName = territory.name
           const wasShielded = territory.shield
           scheduleTimeout(() => {
+            SFX.stopAudio(droneAudio)
             SFX.droneImpact()
             setGame(prev => {
               const live = prev.territories[id]
