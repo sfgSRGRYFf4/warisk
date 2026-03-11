@@ -98,33 +98,20 @@ const SFX = (() => {
       audio.play().catch(() => {})
       audio.addEventListener('ended', () => { audio.src = '' })
     },
-    explosion: (fadeAfterMs = 0) => {
+    explosion: () => {
       const audio = new Audio('/missile-explosion.mp3')
       audio.volume = 0.2
       audio.play().catch(() => {})
-      if (fadeAfterMs > 0) {
-        setTimeout(() => {
-          const fade = setInterval(() => {
-            if (audio.volume > 0.03) audio.volume = Math.max(0, audio.volume - 0.05)
-            else { audio.pause(); clearInterval(fade) }
-          }, 50)
-        }, fadeAfterMs)
-      }
+      // Auto-cleanup when done
+      audio.addEventListener('ended', () => { audio.src = '' })
       return audio
     },
-    nuke: (fadeAfterMs = 0) => {
+    nuke: () => {
       const audio = new Audio('/nuke-explosion.mp3')
       audio.volume = 0.2
       audio.playbackRate = 1.5
       audio.play().catch(() => {})
-      if (fadeAfterMs > 0) {
-        setTimeout(() => {
-          const fade = setInterval(() => {
-            if (audio.volume > 0.03) audio.volume = Math.max(0, audio.volume - 0.05)
-            else { audio.pause(); clearInterval(fade) }
-          }, 50)
-        }, fadeAfterMs)
-      }
+      audio.addEventListener('ended', () => { audio.src = '' })
       return audio
     },
     victory: () => play(c => {
@@ -231,21 +218,23 @@ const SFX = (() => {
       audio.play().catch(() => {})
       audio.addEventListener('ended', () => { audio.src = '' })
     },
-    drone: (fadeAfterMs = 1300) => {
+    drone: (stopAtMs = 1200) => {
       const audio = new Audio('/drone-fly.mp3')
       audio.volume = 0.2
       audio.play().catch(() => {})
-      if (fadeAfterMs > 0) {
+      // Quick fade-out so launch sound ends cleanly before impact
+      if (stopAtMs > 0) {
         setTimeout(() => {
           const fade = setInterval(() => {
-            if (audio.volume > 0.03) audio.volume = Math.max(0, audio.volume - 0.05)
-            else { audio.pause(); clearInterval(fade) }
-          }, 50)
-        }, fadeAfterMs)
+            if (audio.volume > 0.02) audio.volume = Math.max(0, audio.volume - 0.08)
+            else { audio.pause(); audio.src = ''; clearInterval(fade) }
+          }, 30)
+        }, stopAtMs)
       }
       return audio
     },
     missileSound: () => play(c => {
+      // Initial launch burst — short explosive whoosh (0-0.2s)
       const wBuf = c.createBuffer(1, c.sampleRate * 0.15, c.sampleRate)
       const wd = wBuf.getChannelData(0)
       for (let i = 0; i < wd.length; i++) wd[i] = (Math.random() * 2 - 1) * 0.5
@@ -255,26 +244,26 @@ const SFX = (() => {
       wg.gain.setValueAtTime(0.06, c.currentTime)
       wg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.2)
       ws.connect(wf).connect(wg).connect(c.destination); ws.start()
+      // Rising tone — rocket ascending (0-0.3s)
       const o = c.createOscillator(), g = c.createGain()
       o.type = 'sine'; o.frequency.setValueAtTime(200, c.currentTime)
       o.frequency.exponentialRampToValueAtTime(2000, c.currentTime + 0.25)
       g.gain.setValueAtTime(0.08, c.currentTime)
       g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3)
       o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.3)
-      const buf = c.createBuffer(1, c.sampleRate * 0.25, c.sampleRate)
-      const d = buf.getChannelData(0)
-      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 1.5)
-      const s = c.createBufferSource(), sg2 = c.createGain(), sf = c.createBiquadFilter()
-      s.buffer = buf; sf.type = 'lowpass'; sf.frequency.value = 1000
-      sg2.gain.setValueAtTime(0.15, c.currentTime + 0.25)
-      sg2.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5)
-      s.connect(sf).connect(sg2).connect(c.destination); s.start(c.currentTime + 0.25)
-      const boom = c.createOscillator(), bg = c.createGain()
-      boom.type = 'sine'; boom.frequency.setValueAtTime(60, c.currentTime + 0.25)
-      boom.frequency.exponentialRampToValueAtTime(20, c.currentTime + 0.4)
-      bg.gain.setValueAtTime(0.1, c.currentTime + 0.25)
-      bg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.45)
-      boom.connect(bg).connect(c.destination); boom.start(c.currentTime + 0.25); boom.stop(c.currentTime + 0.45)
+      // Flight whoosh — sustained noise that fades over flight duration (0.2s-1.4s)
+      const flightBuf = c.createBuffer(1, c.sampleRate * 1.2, c.sampleRate)
+      const fd = flightBuf.getChannelData(0)
+      for (let i = 0; i < fd.length; i++) fd[i] = (Math.random() * 2 - 1)
+      const fs = c.createBufferSource(), fg = c.createGain(), ff = c.createBiquadFilter()
+      fs.buffer = flightBuf; ff.type = 'bandpass'; ff.frequency.value = 600; ff.Q.value = 1
+      ff.frequency.setValueAtTime(600, c.currentTime + 0.2)
+      ff.frequency.linearRampToValueAtTime(1200, c.currentTime + 1.4)
+      fg.gain.setValueAtTime(0, c.currentTime)
+      fg.gain.linearRampToValueAtTime(0.04, c.currentTime + 0.3)
+      fg.gain.setValueAtTime(0.04, c.currentTime + 1.0)
+      fg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 1.4)
+      fs.connect(ff).connect(fg).connect(c.destination); fs.start(c.currentTime + 0.2)
     }),
     deploy: () => play(c => {
       for (let step = 0; step < 2; step++) {
@@ -2524,16 +2513,16 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
 
         // Tactical Missile: kill 2-5 troops
         if (selectedItem === 'missile') {
-          // Immediately: launch sound + explosion audio + animation + deduct cost
+          // Immediately: launch sound + animation + deduct cost
           SFX.missileSound()
-          SFX.explosion(2000) // starts now, fades out 0.5s after impact (1500ms flight + 500ms)
           addMapAnimation('missile_arc', 'usa', id)
           setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: false, freeMissile: false, totalMissiles: prev.totalMissiles + 1 }))
           setSelectedItem(null)
-          // Delayed: effects sync with animation impact (~1500ms)
+          // Delayed: impact sounds + effects sync with animation (~1500ms)
           const tName = territory.name
           const wasShielded = territory.shield
           scheduleTimeout(() => {
+            SFX.explosion()
             SFX.missileImpact()
             triggerShake()
             setGame(prev => {
@@ -2571,13 +2560,14 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         // Nuclear Strike: kills ALL troops, irradiates for 3 turns, destroys buildings
         if (selectedItem === 'nuke') {
           // Immediately: launch sound + animation + deduct cost
-          SFX.nuke(3300) // starts now, fades out 1s after impact (2300ms flight + 1000ms)
+          SFX.missileSound()
           addMapAnimation('nuke_blast', 'usa', id)
           setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: false, freeNuke: false, totalNukes: prev.totalNukes + 1 }))
           setSelectedItem(null)
-          // Delayed: effects sync with ICBM impact (~2300ms)
+          // Delayed: impact sounds + effects sync with ICBM animation (~2300ms)
           const tName = territory.name
           scheduleTimeout(() => {
+            SFX.nuke()
             triggerShake()
             setGame(prev => {
               const live = prev.territories[id]
