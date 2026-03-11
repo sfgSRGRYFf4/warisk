@@ -21,6 +21,31 @@ const SHOP_SHORT = {
   un_resolution:'UN Res.',
 }
 
+// Reactive mobile detection hook — updates on resize/orientation change
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth < breakpoint
+  )
+  const [isLandscape, setIsLandscape] = useState(() =>
+    typeof window !== 'undefined' && window.innerHeight < 500 && window.innerWidth > window.innerHeight
+  )
+
+  useEffect(() => {
+    const check = () => {
+      setIsMobile(window.innerWidth < breakpoint)
+      setIsLandscape(window.innerHeight < 500 && window.innerWidth > window.innerHeight)
+    }
+    window.addEventListener('resize', check)
+    window.addEventListener('orientationchange', () => setTimeout(check, 150))
+    return () => {
+      window.removeEventListener('resize', check)
+      window.removeEventListener('orientationchange', check)
+    }
+  }, [breakpoint])
+
+  return { isMobile, isLandscape }
+}
+
 // ----------------------------------------------------------
 // SOUND ENGINE — procedural sounds via Web Audio API
 // ----------------------------------------------------------
@@ -378,9 +403,9 @@ function NewsTicker({ extraHeadlines = [] }) {
     <div className="w-full bg-red-enemy/10 border-b border-red-enemy/30 overflow-hidden relative z-20">
       <div className="flex items-center">
         {/* LIVE badge */}
-        <div className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 bg-red-enemy/20 border-r border-red-enemy/30">
-          <span className="inline-block w-2 h-2 rounded-full bg-red-500 live-dot" />
-          <span className="text-xs text-red-400 font-bold tracking-wider">LIVE</span>
+        <div className="flex-shrink-0 flex items-center gap-1 px-1.5 sm:px-2 py-0.5 bg-red-enemy/20 border-r border-red-enemy/30">
+          <span className="inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-red-500 live-dot" />
+          <span className="text-[9px] sm:text-xs text-red-400 font-bold tracking-wider">LIVE</span>
         </div>
         {/* Scrolling text */}
         <div className="overflow-hidden flex-1">
@@ -389,8 +414,8 @@ function NewsTicker({ extraHeadlines = [] }) {
             style={{ '--ticker-duration': `${speed}s` }}
           >
             {doubled.map((headline, i) => (
-              <span key={`${i}-${headline.slice(0, 20)}`} className="text-[10px] text-red-400/80 px-4">
-                {headline} <span className="text-red-enemy/30 mx-2">│</span>
+              <span key={`${i}-${headline.slice(0, 20)}`} className="text-[9px] sm:text-[10px] text-red-400/80 px-2 sm:px-4">
+                {headline} <span className="text-red-enemy/30 mx-1 sm:mx-2">│</span>
               </span>
             ))}
           </div>
@@ -403,7 +428,7 @@ function NewsTicker({ extraHeadlines = [] }) {
 function MenuScreen({ onStart, hasSave, onResume }) {
   const [difficulty, setDifficulty] = useState('normal')
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
+    <div className="min-h-screen flex flex-col relative overflow-hidden safe-top safe-bottom">
       {/* Background grid */}
       <div className="absolute inset-0 opacity-10">
         <svg width="100%" height="100%">
@@ -419,18 +444,18 @@ function MenuScreen({ onStart, hasSave, onResume }) {
       {/* News Ticker */}
       <NewsTicker />
 
-      {/* Content — centered in remaining space */}
-      <div className="flex-1 flex items-center justify-center">
-      <div className="relative z-10 flex flex-col items-center gap-8">
+      {/* Content — centered in remaining space, scrollable on mobile */}
+      <div className="flex-1 flex items-center justify-center overflow-y-auto py-4 sm:py-0">
+      <div className="relative z-10 flex flex-col items-center gap-5 sm:gap-8 px-4">
         {/* Logo */}
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-1 sm:gap-2">
           <h1
-            className="text-6xl md:text-8xl tracking-wider text-red-enemy"
+            className="text-4xl sm:text-6xl md:text-8xl tracking-wider text-red-enemy"
             style={{ fontFamily: 'var(--font-military)' }}
           >
             WARISK
           </h1>
-          <div className="text-sm md:text-base text-text-dim tracking-[0.3em] uppercase">
+          <div className="text-xs sm:text-sm md:text-base text-text-dim tracking-[0.2em] sm:tracking-[0.3em] uppercase">
             How America Sees the World
           </div>
         </div>
@@ -439,19 +464,19 @@ function MenuScreen({ onStart, hasSave, onResume }) {
         <div className="w-64 h-px bg-green-grid opacity-50" />
 
         {/* Difficulty selector */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-center gap-2 px-4">
           {Object.entries(DIFFICULTY_SETTINGS).map(([key, d]) => (
             <button
               key={key}
               onClick={() => setDifficulty(key)}
-              className={`border px-5 py-2.5 text-xs tracking-widest uppercase transition-all cursor-pointer ${
+              className={`border px-4 sm:px-5 py-2.5 text-xs tracking-widest uppercase transition-all cursor-pointer min-w-[90px] ${
                 difficulty === key
                   ? 'border-green-500/60 bg-green-500/20 text-green-400'
                   : 'border-gray-neutral/30 bg-transparent text-text-dim hover:bg-gray-neutral/10'
               }`}
             >
               <div className="font-bold">{d.label}</div>
-              <div className="text-[10px] mt-0.5 opacity-60">{d.description}</div>
+              <div className="text-[10px] mt-0.5 opacity-60 hidden sm:block">{d.description}</div>
             </button>
           ))}
         </div>
@@ -493,7 +518,7 @@ function MenuScreen({ onStart, hasSave, onResume }) {
         </a>
 
         {/* Token Section */}
-        <div className="w-full max-w-sm border border-green-500/20 bg-bg-card/60 p-4 mt-4">
+        <div className="w-full max-w-sm border border-green-500/20 bg-bg-card/60 p-3 sm:p-4 mt-2 sm:mt-4">
           <div className="text-center mb-3">
             <span className="text-gold-accent font-bold text-base tracking-wider flex items-center justify-center gap-1.5"><img src="/warisk-coin.png" alt="W" className="w-5 h-5" />WARISK</span>
             <span className="text-text-dim text-xs ml-2 tracking-wider">THE FREEDOM CURRENCY</span>
@@ -949,7 +974,7 @@ function MapAnimation({ anim }) {
 }
 
 function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerritoryClick, onAllyClick, attackFrom, fortifyFrom, dragGuardRef, highlightedTargets, mapAnimations, onCentroidsReady }) {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
+  const { isMobile } = useIsMobile()
   const [zoom, setZoom] = useState(() => isMobile ? 1.5 : 1.1)
   const [pan, setPan] = useState(() => isMobile ? { x: -30, y: -5 } : { x: 0, y: 0 })
   const containerRef = useRef(null)
@@ -1519,10 +1544,26 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
         ))}
       </svg>
 
-      {/* Zoom indicator */}
-      {(Math.abs(zoom - (isMobile ? 1.5 : 1.1)) > 0.05) && (
+      {/* Zoom controls — mobile gets persistent +/- buttons, desktop gets indicator on zoom */}
+      {isMobile ? (
+        <div className="absolute top-2 right-2 z-30 flex flex-col gap-1">
+          <button
+            onClick={() => setZoom(z => { const next = Math.min(2.5, z + 0.3); if (next > 1) setPan(p => clampPan(p.x, p.y, next)); return next })}
+            className="zoom-btn bg-bg-card/90 border border-green-500/30 text-green-400 active:bg-green-500/20"
+          >+</button>
+          <div className="text-[8px] text-green-400/70 text-center bg-bg-card/80 border-x border-green-500/20 px-1">{zoom.toFixed(1)}x</div>
+          <button
+            onClick={() => setZoom(z => { const next = Math.max(1, z - 0.3); if (next <= 1) setPan({ x: 0, y: 0 }); else setPan(p => clampPan(p.x, p.y, next)); return next })}
+            className="zoom-btn bg-bg-card/90 border border-green-500/30 text-green-400 active:bg-green-500/20"
+          >-</button>
+          <button
+            onClick={() => { setZoom(1.5); setPan({ x: -30, y: -5 }) }}
+            className="zoom-btn text-[8px] bg-bg-card/90 border border-green-500/20 text-text-dim active:text-green-400"
+          >RST</button>
+        </div>
+      ) : (Math.abs(zoom - 1.1) > 0.05) && (
         <div className="absolute top-2 right-2 z-30 bg-bg-card/80 border border-green-500/20 px-2 py-1 text-[9px] text-green-400">
-          ZOOM: {zoom.toFixed(1)}x │ <span className="hidden sm:inline">Drag to pan │ </span><span className="sm:hidden">Pinch/drag │ </span><button onClick={() => { setZoom(isMobile ? 1.5 : 1.1); setPan(isMobile ? { x: -30, y: -5 } : { x: 0, y: 0 }) }} className="text-text-dim hover:text-green-400 cursor-pointer">RESET</button>
+          ZOOM: {zoom.toFixed(1)}x │ Drag to pan │ <button onClick={() => { setZoom(1.1); setPan({ x: 0, y: 0 }) }} className="text-text-dim hover:text-green-400 cursor-pointer">RESET</button>
         </div>
       )}
 
@@ -1532,10 +1573,10 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
         const t = live || hoveredTerritory
         return (
           <div
-            className="absolute z-30 pointer-events-none bg-bg-card/95 border border-green-500/30 px-3 py-2 sm:px-5 sm:py-4 text-xs sm:text-base max-w-[90vw] sm:max-w-[380px]"
+            className="absolute z-30 pointer-events-none bg-bg-card/95 border border-green-500/30 px-2.5 py-1.5 sm:px-5 sm:py-4 text-[10px] sm:text-base max-w-[85vw] sm:max-w-[380px]"
             style={{
               left: '50%',
-              bottom: '8px',
+              bottom: isMobile ? '4px' : '8px',
               transform: 'translateX(-50%)',
             }}
           >
@@ -1624,27 +1665,27 @@ function DiceCombatOverlay({ data, onDone }) {
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 pointer-events-none">
-      <div className="border border-gold-accent/40 bg-bg-card/95 px-8 py-5 text-center">
-        <div className="text-[10px] text-text-dim tracking-widest mb-3">DICE COMBAT</div>
-        <div className="flex items-center gap-6 justify-center mb-3">
+      <div className="border border-gold-accent/40 bg-bg-card/95 px-5 sm:px-8 py-4 sm:py-5 text-center mx-4 max-w-[90vw]">
+        <div className="text-[9px] sm:text-[10px] text-text-dim tracking-widest mb-2 sm:mb-3">DICE COMBAT</div>
+        <div className="flex items-center gap-4 sm:gap-6 justify-center mb-2 sm:mb-3">
           {/* Attacker dice */}
           <div>
-            <div className="text-[9px] text-blue-player mb-1 tracking-wider">ATTACKER</div>
+            <div className="text-[8px] sm:text-[9px] text-blue-player mb-1 tracking-wider">ATTACKER</div>
             <div className="flex gap-1 justify-center">
               {dice.a.map((v, i) => (
-                <span key={i} className={`text-3xl ${phase === 'result' && i < Math.min(data.aRolls.length, data.dRolls.length) && data.aRolls[i] > data.dRolls[i] ? 'text-green-400' : phase === 'result' ? 'text-red-400' : 'text-blue-player'}`}>
+                <span key={i} className={`text-2xl sm:text-3xl ${phase === 'result' && i < Math.min(data.aRolls.length, data.dRolls.length) && data.aRolls[i] > data.dRolls[i] ? 'text-green-400' : phase === 'result' ? 'text-red-400' : 'text-blue-player'}`}>
                   {DICE_FACES[v] || v}
                 </span>
               ))}
             </div>
           </div>
-          <span className="text-text-dim text-lg font-bold">VS</span>
+          <span className="text-text-dim text-base sm:text-lg font-bold">VS</span>
           {/* Defender dice */}
           <div>
-            <div className="text-[9px] text-red-enemy mb-1 tracking-wider">DEFENDER</div>
+            <div className="text-[8px] sm:text-[9px] text-red-enemy mb-1 tracking-wider">DEFENDER</div>
             <div className="flex gap-1 justify-center">
               {dice.d.map((v, i) => (
-                <span key={i} className={`text-3xl ${phase === 'result' && i < Math.min(data.aRolls.length, data.dRolls.length) && data.dRolls[i] >= data.aRolls[i] ? 'text-green-400' : phase === 'result' ? 'text-red-400' : 'text-red-enemy'}`}>
+                <span key={i} className={`text-2xl sm:text-3xl ${phase === 'result' && i < Math.min(data.aRolls.length, data.dRolls.length) && data.dRolls[i] >= data.aRolls[i] ? 'text-green-400' : phase === 'result' ? 'text-red-400' : 'text-red-enemy'}`}>
                   {DICE_FACES[v] || v}
                 </span>
               ))}
@@ -1652,7 +1693,7 @@ function DiceCombatOverlay({ data, onDone }) {
           </div>
         </div>
         {phase === 'result' && (
-          <div className="text-xs text-gold-accent mt-2">
+          <div className="text-[10px] sm:text-xs text-gold-accent mt-1 sm:mt-2">
             {data.conquered ? `TERRITORY CONQUERED!` : `You: -${data.aLoss} │ Enemy: -${data.dLoss}`}
           </div>
         )}
@@ -1667,7 +1708,7 @@ function DiceCombatOverlay({ data, onDone }) {
 function ActionFeedback({ message }) {
   if (!message) return null
   return (
-    <div className="absolute top-12 left-1/2 -translate-x-1/2 z-40 bg-bg-card/95 border border-gold-accent/40 px-4 py-2 text-xs text-gold-accent max-w-md text-center">
+    <div className="absolute top-10 sm:top-12 left-1/2 -translate-x-1/2 z-40 bg-bg-card/95 border border-gold-accent/40 px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs text-gold-accent max-w-[90vw] sm:max-w-md text-center">
       {message}
     </div>
   )
@@ -1708,16 +1749,16 @@ function EventPopup({ event, onDone }) {
   return (
     <div className={`absolute inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
       style={{ background: 'rgba(0,0,0,0.75)' }}>
-      <div className={`border-2 bg-bg-card/95 px-6 py-4 sm:px-10 sm:py-6 max-w-sm sm:max-w-md text-center event-popup-enter ${
+      <div className={`border-2 bg-bg-card/95 px-5 py-3 sm:px-10 sm:py-6 max-w-[85vw] sm:max-w-md text-center event-popup-enter mx-4 ${
         isPos ? 'border-green-500/60' : isNeg ? 'border-red-enemy/60' : 'border-gold-accent/40'
       }`}>
-        <div className="text-[10px] tracking-[0.3em] text-text-dim mb-2">INTELLIGENCE REPORT</div>
-        <div className={`text-sm sm:text-base font-bold mb-3 ${
+        <div className="text-[9px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em] text-text-dim mb-1.5 sm:mb-2">INTELLIGENCE REPORT</div>
+        <div className={`text-xs sm:text-base font-bold mb-2 sm:mb-3 leading-snug ${
           isPos ? 'text-green-400' : isNeg ? 'text-red-400' : 'text-gold-accent'
         }`}>
           {event.text}
         </div>
-        <div className={`text-xs tracking-wider ${
+        <div className={`text-[10px] sm:text-xs tracking-wider ${
           isPos ? 'text-green-400/70' : isNeg ? 'text-red-400/70' : 'text-text-dim'
         }`}>
           {EVENT_LABELS[event.effect] || event.effect.toUpperCase()}
@@ -1819,32 +1860,32 @@ function MissionBriefing({ onDismiss }) {
   const p = pages[page]
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80">
-      <div className="border border-green-500/40 bg-bg-card/95 max-w-lg w-full mx-4">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-0">
+      <div className="border border-green-500/40 bg-bg-card/95 max-w-lg w-full mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="border-b border-green-500/20 px-6 py-3 flex items-center justify-between">
+        <div className="border-b border-green-500/20 px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-between">
           <div>
-            <div className="text-base text-green-400 font-bold tracking-wider"
+            <div className="text-sm sm:text-base text-green-400 font-bold tracking-wider"
               style={{ fontFamily: 'var(--font-military)' }}
             >
               {p.title}
             </div>
-            <div className="text-xs text-text-dim tracking-widest">{p.subtitle}</div>
+            <div className="text-[10px] sm:text-xs text-text-dim tracking-widest">{p.subtitle}</div>
           </div>
-          <div className="text-xs text-text-dim">{page + 1}/{pages.length}</div>
+          <div className="text-[10px] sm:text-xs text-text-dim">{page + 1}/{pages.length}</div>
         </div>
 
         {/* Content */}
-        <div className="px-6 py-5 space-y-3">
+        <div className="px-4 sm:px-6 py-3 sm:py-5 space-y-2 sm:space-y-3 text-xs sm:text-sm">
           {p.content}
         </div>
 
         {/* Footer buttons */}
-        <div className="border-t border-green-500/20 px-6 py-3 flex items-center justify-between">
+        <div className="border-t border-green-500/20 px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-between">
           {page > 0 ? (
             <button
               onClick={() => setPage(page - 1)}
-              className="text-xs border border-text-dim/30 text-text-dim px-5 py-2 hover:bg-white/5 transition-all cursor-pointer tracking-wider"
+              className="text-xs border border-text-dim/30 text-text-dim px-4 sm:px-5 py-2 hover:bg-white/5 transition-all cursor-pointer tracking-wider"
             >
               ◂ BACK
             </button>
@@ -1852,16 +1893,16 @@ function MissionBriefing({ onDismiss }) {
           {page < pages.length - 1 ? (
             <button
               onClick={() => setPage(page + 1)}
-              className="text-xs border border-green-500/40 bg-green-500/10 text-green-400 px-5 py-2 hover:bg-green-500/20 transition-all cursor-pointer tracking-wider btn-war"
+              className="text-xs border border-green-500/40 bg-green-500/10 text-green-400 px-4 sm:px-5 py-2 hover:bg-green-500/20 transition-all cursor-pointer tracking-wider btn-war"
             >
               NEXT ▸
             </button>
           ) : (
             <button
               onClick={onDismiss}
-              className="text-sm border-2 border-green-500/40 bg-green-500/10 text-green-400 px-6 py-2.5 hover:bg-green-500/20 transition-all cursor-pointer tracking-wider font-bold btn-war"
+              className="text-xs sm:text-sm border-2 border-green-500/40 bg-green-500/10 text-green-400 px-4 sm:px-6 py-2 sm:py-2.5 hover:bg-green-500/20 transition-all cursor-pointer tracking-wider font-bold btn-war"
             >
-              BEGIN OPERATION ▸
+              BEGIN ▸
             </button>
           )}
         </div>
@@ -1875,6 +1916,8 @@ function MissionBriefing({ onDismiss }) {
 // ----------------------------------------------------------
 function GameTerminal({ log }) {
   const scrollRef = useRef(null)
+  const { isMobile, isLandscape } = useIsMobile()
+  const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -1882,17 +1925,35 @@ function GameTerminal({ log }) {
     }
   }, [log.length])
 
+  // Auto-collapse in landscape on mobile
+  const effectiveCollapsed = collapsed || isLandscape
+
   return (
-    <div className="relative z-10 border-t border-green-500/20 bg-black/80 flex-shrink-0" style={{ height: '70px' }}>
+    <div className="relative z-10 border-t border-green-500/20 bg-black/80 flex-shrink-0 terminal-collapse"
+      style={{ height: effectiveCollapsed ? '20px' : isMobile ? '50px' : '70px' }}
+    >
+      {/* Toggle button */}
+      {isMobile && (
+        <button
+          onClick={() => setCollapsed(c => !c)}
+          className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 bg-bg-card border border-green-500/20 px-3 py-0 text-[8px] text-green-400/60 cursor-pointer no-select"
+        >
+          {effectiveCollapsed ? '▼ LOG' : '▲'}
+        </button>
+      )}
       <div
         ref={scrollRef}
-        className="game-terminal overflow-y-auto px-4 py-2 h-full"
+        className="game-terminal overflow-y-auto px-3 sm:px-4 py-1 sm:py-2 h-full"
         style={{ fontFamily: 'var(--font-mono)' }}
       >
-        {log.length === 0 ? (
+        {effectiveCollapsed ? (
+          <div className="text-[10px] text-gray-500 truncate leading-relaxed pt-0.5">
+            {log.length > 0 ? log[log.length - 1].text : 'Awaiting transmission...'}
+          </div>
+        ) : log.length === 0 ? (
           <div className="text-xs text-gray-600 leading-relaxed">Awaiting transmission...</div>
         ) : log.map((entry, i) => (
-          <div key={i} className={`text-xs terminal-line leading-relaxed ${
+          <div key={i} className={`text-[10px] sm:text-xs terminal-line leading-relaxed ${
             entry.type === 'player' ? 'text-green-400' :
             entry.type === 'enemy' ? 'text-red-400' :
             entry.type === 'event' ? 'text-yellow-400' :
@@ -2970,31 +3031,34 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
   }, [game.phase])
 
   return (
-    <div className={`h-screen flex flex-col relative overflow-hidden ${shaking ? 'screen-shake' : ''}`}>
-      {/* News Ticker */}
-      <NewsTicker extraHeadlines={game.newsQueue} />
+    <div className={`h-screen flex flex-col relative overflow-hidden no-select safe-top safe-bottom ${shaking ? 'screen-shake' : ''}`}>
+      {/* News Ticker — hidden in landscape on mobile */}
+      <div className="landscape-hide">
+        <NewsTicker extraHeadlines={game.newsQueue} />
+      </div>
 
       {/* Top bar — live data */}
-      <div className="relative z-10 border-b border-green-500/20 bg-bg-card/80 px-3 py-1">
+      <div className="relative z-10 border-b border-green-500/20 bg-bg-card/80 px-2 sm:px-3 py-0.5 sm:py-1 landscape-compact">
         {/* Row 1: status + money */}
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-text-dim tracking-wider uppercase flex items-center gap-1.5">
+        <div className="flex items-center justify-between gap-1">
+          <div className="text-[10px] sm:text-xs text-text-dim tracking-wider uppercase flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
             <span className="text-green-400">◆</span>
             <span className="hidden sm:inline">OPERATION ACTIVE │ </span>
-            {conquered}/{TOTAL_ATTACKABLE} LIBERATED
+            <span className="sm:hidden">{conquered}/{TOTAL_ATTACKABLE}</span>
+            <span className="hidden sm:inline">{conquered}/{TOTAL_ATTACKABLE} LIBERATED</span>
           </div>
-          <div className="text-sm text-gold-accent font-bold flex items-center gap-1">
-            <img src="/warisk-coin.png" alt="W" className="w-4 h-4 inline-block" />
+          <div className="text-xs sm:text-sm text-gold-accent font-bold flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+            <img src="/warisk-coin.png" alt="W" className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline-block" />
             {game.warisk}
-            <span className="text-xs text-gold-accent/60">(+{game.tripleIncome ? wariskPerSec * 3 : game.doubleIncome ? wariskPerSec * 2 : wariskPerSec}/s{game.tripleIncome ? ' x3!' : game.doubleIncome ? ' x2!' : ''})</span>
+            <span className="text-[9px] sm:text-xs text-gold-accent/60 hidden sm:inline">(+{game.tripleIncome ? wariskPerSec * 3 : game.doubleIncome ? wariskPerSec * 2 : wariskPerSec}/s{game.tripleIncome ? ' x3!' : game.doubleIncome ? ' x2!' : ''})</span>
+            <span className="text-[9px] text-gold-accent/60 sm:hidden">+{game.tripleIncome ? wariskPerSec * 3 : game.doubleIncome ? wariskPerSec * 2 : wariskPerSec}/s</span>
           </div>
-          <div className="text-xs text-text-dim flex items-center gap-1.5">
+          <div className="text-[10px] sm:text-xs text-text-dim flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
             <span className="hidden sm:inline">TURN {game.turn} │ </span>
-            <span className="sm:hidden">T{game.turn} │ </span>
-            {PHASE_LABELS[game.phase]}
+            <span className="sm:hidden">T{game.turn}</span>
             <button
               onClick={toggleMusic}
-              className={`text-xs border px-2 py-0.5 cursor-pointer transition-all font-bold ${
+              className={`text-xs border px-1.5 sm:px-2 py-0.5 cursor-pointer transition-all font-bold touch-target ${
                 musicOn
                   ? 'border-green-500/60 text-green-400 hover:bg-green-500/10'
                   : 'border-gray-neutral/20 text-text-dim/40 hover:bg-gray-neutral/10'
@@ -3010,9 +3074,10 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
 
       {/* USA low troops warning */}
       {game.territories.usa && game.territories.usa.troops <= 3 && game.territories.usa.troops > 0 && (
-        <div className="relative z-20 text-center py-1.5 bg-red-enemy/15 border-b border-red-enemy/30 animate-pulse">
-          <span className="text-[11px] text-red-400 font-bold tracking-wider">
-            ⚠ WARNING: USA HOMELAND DEFENSE CRITICAL — {game.territories.usa.troops} TROOP{game.territories.usa.troops !== 1 ? 'S' : ''} REMAINING ⚠
+        <div className="relative z-20 text-center py-1 sm:py-1.5 bg-red-enemy/15 border-b border-red-enemy/30 animate-pulse landscape-hide">
+          <span className="text-[10px] sm:text-[11px] text-red-400 font-bold tracking-wider">
+            <span className="hidden sm:inline">⚠ WARNING: USA HOMELAND DEFENSE CRITICAL — {game.territories.usa.troops} TROOP{game.territories.usa.troops !== 1 ? 'S' : ''} REMAINING ⚠</span>
+            <span className="sm:hidden">⚠ USA CRITICAL: {game.territories.usa.troops} TROOPS ⚠</span>
           </span>
         </div>
       )}
@@ -3022,13 +3087,13 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
 
       {/* Instruction hint when item selected */}
       {selectedItem && (
-        <div className="relative z-20 text-center py-1 bg-gold-accent/10 border-b border-gold-accent/20">
-          <span className="text-xs text-gold-accent">
-            ▸ {SHOP[selectedItem].name} selected — click a territory │
+        <div className="relative z-20 text-center py-0.5 sm:py-1 bg-gold-accent/10 border-b border-gold-accent/20 landscape-hide">
+          <span className="text-[10px] sm:text-xs text-gold-accent">
+            ▸ {SHOP[selectedItem].name} selected — <span className="hidden sm:inline">click</span><span className="sm:hidden">tap</span> a territory │
           </span>
           <button
             onClick={() => { setSelectedItem(null); setFeedback(null) }}
-            className="text-xs text-red-400 ml-2 underline cursor-pointer"
+            className="text-[10px] sm:text-xs text-red-400 ml-1.5 sm:ml-2 underline cursor-pointer"
           >
             cancel
           </button>
@@ -3037,8 +3102,8 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
 
       {/* Instruction hint for BUILD phase */}
       {game.phase === 'build' && !selectedItem && (
-        <div className="relative z-20 text-center py-1 bg-green-500/10 border-b border-green-500/20">
-          <span className="text-xs text-green-400">
+        <div className="relative z-20 text-center py-0.5 sm:py-1 bg-green-500/10 border-b border-green-500/20 landscape-hide">
+          <span className="text-[10px] sm:text-xs text-green-400">
             <span className="hidden sm:inline">▸ Buy items below, then click YOUR territory to place them. Click NEXT PHASE when done.</span>
             <span className="sm:hidden">▸ Buy below → tap YOUR territory</span>
           </span>
@@ -3047,8 +3112,8 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
 
       {/* Instruction hint for STRIKE phase */}
       {game.phase === 'strike' && !selectedItem && (
-        <div className="relative z-20 text-center py-1 bg-red-enemy/10 border-b border-red-enemy/20">
-          <span className="text-xs text-red-400">
+        <div className="relative z-20 text-center py-0.5 sm:py-1 bg-red-enemy/10 border-b border-red-enemy/20 landscape-hide">
+          <span className="text-[10px] sm:text-xs text-red-400">
             <span className="hidden sm:inline">▸ Buy weapons below, then click an ENEMY territory to strike. Click NEXT PHASE when done.</span>
             <span className="sm:hidden">▸ Buy weapon → tap ENEMY territory</span>
           </span>
@@ -3057,8 +3122,8 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
 
       {/* Instruction hint for ATTACK phase */}
       {game.phase === 'attack' && !selectedItem && (
-        <div className="relative z-20 text-center py-1 bg-gold-accent/10 border-b border-gold-accent/20">
-          <span className="text-xs text-gold-accent">
+        <div className="relative z-20 text-center py-0.5 sm:py-1 bg-gold-accent/10 border-b border-gold-accent/20 landscape-hide">
+          <span className="text-[10px] sm:text-xs text-gold-accent">
             {attackFrom
               ? <><span className="hidden sm:inline">{`▸ Attacking from ${game.territories[attackFrom]?.name} — click adjacent enemy territory │`}</span><span className="sm:hidden">{`▸ From ${game.territories[attackFrom]?.name} → tap enemy`}</span></>
               : <><span className="hidden sm:inline">▸ Click one of YOUR territories to attack from (or NEXT PHASE to skip)</span><span className="sm:hidden">▸ Tap YOUR territory to attack</span></>}
@@ -3066,7 +3131,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           {attackFrom && (
             <button
               onClick={() => { setAttackFrom(null); setFeedback(null) }}
-              className="text-xs text-red-400 ml-2 underline cursor-pointer"
+              className="text-[10px] sm:text-xs text-red-400 ml-1.5 sm:ml-2 underline cursor-pointer"
             >
               cancel
             </button>
@@ -3076,8 +3141,8 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
 
       {/* Instruction hint for FORTIFY phase */}
       {game.phase === 'fortify' && !selectedItem && (
-        <div className="relative z-20 text-center py-1 bg-blue-player/10 border-b border-blue-player/20">
-          <span className="text-xs text-blue-player">
+        <div className="relative z-20 text-center py-0.5 sm:py-1 bg-blue-player/10 border-b border-blue-player/20 landscape-hide">
+          <span className="text-[10px] sm:text-xs text-blue-player">
             {fortifyFrom
               ? <><span className="hidden sm:inline">{`▸ Moving from ${game.territories[fortifyFrom]?.name} — click adjacent friendly territory │`}</span><span className="sm:hidden">{`▸ From ${game.territories[fortifyFrom]?.name} → tap friendly`}</span></>
               : <><span className="hidden sm:inline">▸ Click a territory to move troops from (or END TURN to skip)</span><span className="sm:hidden">▸ Tap territory to move troops</span></>}
@@ -3114,20 +3179,20 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       <GameTerminal log={game.terminalLog || []} />
 
       {/* Action bar — redesigned bigger */}
-      <div className="relative z-10 flex-shrink-0 border-t-2 border-green-500/40 bg-bg-card/95 action-bar-glow py-0.5">
+      <div className="relative z-10 flex-shrink-0 border-t-2 border-green-500/40 bg-bg-card/95 action-bar-glow py-0.5 safe-bottom">
         {/* Phase indicators */}
-        <div className="flex items-center justify-between px-2 sm:px-4 pt-1 pb-0.5">
-          <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto">
+        <div className="flex items-center justify-between px-2 sm:px-4 pt-1 pb-0.5 landscape-compact">
+          <div className="flex items-center gap-1.5 sm:gap-4 overflow-x-auto">
             {PHASE_ORDER.map(p => (
               <span
                 key={p}
-                className={`text-xs sm:text-sm tracking-wider uppercase transition-all duration-300 whitespace-nowrap ${
+                className={`text-[10px] sm:text-sm tracking-wider uppercase transition-all duration-300 whitespace-nowrap ${
                   p === game.phase
                     ? 'text-green-400 phase-active font-bold'
                     : 'text-text-dim/40'
                 }`}
               >
-                {p === game.phase ? '◆' : '◇'} <span className="hidden sm:inline">{PHASE_LABELS[p]}</span><span className="sm:hidden">{PHASE_LABELS[p].split(' ')[0].slice(0,3)}</span>
+                {p === game.phase ? '◆' : '◇'} <span className="hidden sm:inline">{PHASE_LABELS[p]}</span><span className="sm:hidden">{p === 'enemy_turn' ? 'ENM' : PHASE_LABELS[p]}</span>
               </span>
             ))}
           </div>
@@ -3140,14 +3205,14 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
               {/* ABORT — only visible on mobile here */}
               <button
                 onClick={onMenu}
-                className="sm:hidden flex-shrink-0 text-xs border border-red-enemy/30 text-red-enemy/60 px-2 py-1.5 hover:bg-red-enemy/10 transition-all cursor-pointer"
+                className="sm:hidden flex-shrink-0 text-xs border border-red-enemy/30 text-red-enemy/60 w-9 h-9 flex items-center justify-center hover:bg-red-enemy/10 transition-all cursor-pointer"
               >
                 ✕
               </button>
               <button
                 onClick={handleNextPhase}
                 disabled={!!diceData}
-                className={`text-xs sm:text-sm border-2 px-3 sm:px-6 py-1.5 transition-all tracking-wider font-bold next-phase-btn btn-war whitespace-nowrap ${
+                className={`text-xs sm:text-sm border-2 px-3 sm:px-6 py-2 sm:py-1.5 transition-all tracking-wider font-bold next-phase-btn btn-war whitespace-nowrap ${
                   diceData
                     ? 'border-gray-neutral/30 bg-gray-neutral/10 text-text-dim/40 cursor-not-allowed'
                     : 'border-green-500/50 bg-green-500/15 text-green-400 hover:bg-green-500/25 hover:border-green-500/70 cursor-pointer'
@@ -3164,7 +3229,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         <div className="mx-4 h-px bg-green-500/15" />
 
         {/* Shop items for current phase */}
-        <div className="flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-1 overflow-x-auto">
+        <div className="flex items-center gap-1 sm:gap-3 px-1.5 sm:px-4 py-0.5 sm:py-1 overflow-x-auto landscape-compact">
           {phaseItems.map(([key, item]) => {
             const effectiveCost = getEffectiveCost(key)
             const canAfford = game.warisk >= effectiveCost
@@ -3174,7 +3239,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
               <button
                 key={key}
                 onClick={() => handleShopClick(key)}
-                className={`flex-shrink-0 border px-3 sm:px-6 py-2 sm:py-3.5 text-xs sm:text-base transition-all cursor-pointer flex items-center gap-1.5 sm:gap-3 btn-war ${
+                className={`flex-shrink-0 border px-2.5 sm:px-6 py-2 sm:py-3.5 text-[11px] sm:text-base transition-all cursor-pointer flex items-center gap-1 sm:gap-3 btn-war ${
                   isSelected
                     ? 'border-gold-accent/70 bg-gold-accent/20 text-gold-accent'
                     : canAfford
@@ -3186,10 +3251,10 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
                   <span className="hidden sm:inline">{item.name}</span>
                   <span className="sm:hidden">{SHOP_SHORT[key] || item.name}</span>
                 </span>
-                <span className={`flex items-center gap-1 ${canAfford ? 'text-gold-accent/70' : 'text-text-dim/30'}`}>
+                <span className={`flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-base ${canAfford ? 'text-gold-accent/70' : 'text-text-dim/30'}`}>
                   {isFree ? 'FREE' : <><img src="/warisk-coin.png" alt="W" className="w-3 h-3 sm:w-4 sm:h-4 inline-block" />{effectiveCost}</>}
                   {game.halveCost && effectiveCost > 0 && effectiveCost < item.cost && (
-                    <span className="text-[8px] text-green-400 discount-badge">-50%</span>
+                    <span className="text-[7px] sm:text-[8px] text-green-400 discount-badge">-50%</span>
                   )}
                 </span>
               </button>
@@ -3218,34 +3283,34 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
         if (!src || !tgt) return null
         const maxMove = src.troops - 1
         return (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="border border-blue-player/40 bg-bg-card/95 p-6 min-w-[300px] max-w-sm">
-              <div className="text-sm text-blue-player font-bold tracking-wider mb-4">TROOP TRANSFER</div>
-              <div className="text-xs text-text-dim mb-1">From: <span className="text-text-main">{src.name} (▣ {src.troops})</span></div>
-              <div className="text-xs text-text-dim mb-4">To: <span className="text-text-main">{tgt.name} (▣ {tgt.troops})</span></div>
-              <div className="flex items-center gap-3 mb-4">
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 p-3">
+            <div className="border border-blue-player/40 bg-bg-card/95 p-4 sm:p-6 w-full max-w-[280px] sm:max-w-sm">
+              <div className="text-xs sm:text-sm text-blue-player font-bold tracking-wider mb-3 sm:mb-4">TROOP TRANSFER</div>
+              <div className="text-[10px] sm:text-xs text-text-dim mb-0.5 sm:mb-1">From: <span className="text-text-main">{src.name} (▣ {src.troops})</span></div>
+              <div className="text-[10px] sm:text-xs text-text-dim mb-3 sm:mb-4">To: <span className="text-text-main">{tgt.name} (▣ {tgt.troops})</span></div>
+              <div className="flex items-center gap-3 mb-3 sm:mb-4">
                 <button
                   onClick={() => setFortifyAmount(a => Math.max(1, a - 1))}
-                  className="text-lg border border-blue-player/30 bg-blue-player/10 text-blue-player w-8 h-8 flex items-center justify-center hover:bg-blue-player/20 cursor-pointer"
+                  className="text-lg border border-blue-player/30 bg-blue-player/10 text-blue-player w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-blue-player/20 cursor-pointer active:bg-blue-player/30"
                 >-</button>
                 <div className="flex-1 text-center">
-                  <div className="text-2xl font-bold text-blue-player">{Math.min(fortifyAmount, maxMove)}</div>
-                  <div className="text-[9px] text-text-dim">of {maxMove} available</div>
+                  <div className="text-xl sm:text-2xl font-bold text-blue-player">{Math.min(fortifyAmount, maxMove)}</div>
+                  <div className="text-[8px] sm:text-[9px] text-text-dim">of {maxMove} available</div>
                 </div>
                 <button
                   onClick={() => setFortifyAmount(a => Math.min(maxMove, a + 1))}
-                  className="text-lg border border-blue-player/30 bg-blue-player/10 text-blue-player w-8 h-8 flex items-center justify-center hover:bg-blue-player/20 cursor-pointer"
+                  className="text-lg border border-blue-player/30 bg-blue-player/10 text-blue-player w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-blue-player/20 cursor-pointer active:bg-blue-player/30"
                 >+</button>
               </div>
               {/* Quick buttons */}
-              <div className="flex gap-2 mb-4">
-                <button onClick={() => setFortifyAmount(1)} className="flex-1 text-[10px] border border-blue-player/20 text-blue-player/60 py-1 hover:bg-blue-player/10 cursor-pointer">MIN</button>
-                <button onClick={() => setFortifyAmount(Math.ceil(maxMove / 2))} className="flex-1 text-[10px] border border-blue-player/20 text-blue-player/60 py-1 hover:bg-blue-player/10 cursor-pointer">HALF</button>
-                <button onClick={() => setFortifyAmount(maxMove)} className="flex-1 text-[10px] border border-blue-player/20 text-blue-player/60 py-1 hover:bg-blue-player/10 cursor-pointer">MAX</button>
+              <div className="flex gap-2 mb-3 sm:mb-4">
+                <button onClick={() => setFortifyAmount(1)} className="flex-1 text-[10px] border border-blue-player/20 text-blue-player/60 py-1.5 sm:py-1 hover:bg-blue-player/10 cursor-pointer active:bg-blue-player/20">MIN</button>
+                <button onClick={() => setFortifyAmount(Math.ceil(maxMove / 2))} className="flex-1 text-[10px] border border-blue-player/20 text-blue-player/60 py-1.5 sm:py-1 hover:bg-blue-player/10 cursor-pointer active:bg-blue-player/20">HALF</button>
+                <button onClick={() => setFortifyAmount(maxMove)} className="flex-1 text-[10px] border border-blue-player/20 text-blue-player/60 py-1.5 sm:py-1 hover:bg-blue-player/10 cursor-pointer active:bg-blue-player/20">MAX</button>
               </div>
               <div className="flex gap-2">
-                <button onClick={confirmFortify} className="flex-1 border border-green-500/40 bg-green-500/10 text-green-400 py-2 text-xs tracking-wider hover:bg-green-500/20 cursor-pointer">TRANSFER</button>
-                <button onClick={cancelFortify} className="flex-1 border border-red-enemy/30 text-red-enemy/60 py-2 text-xs tracking-wider hover:bg-red-enemy/10 cursor-pointer">CANCEL</button>
+                <button onClick={confirmFortify} className="flex-1 border border-green-500/40 bg-green-500/10 text-green-400 py-2.5 sm:py-2 text-xs tracking-wider hover:bg-green-500/20 cursor-pointer active:bg-green-500/30">TRANSFER</button>
+                <button onClick={cancelFortify} className="flex-1 border border-red-enemy/30 text-red-enemy/60 py-2.5 sm:py-2 text-xs tracking-wider hover:bg-red-enemy/10 cursor-pointer active:bg-red-enemy/20">CANCEL</button>
               </div>
             </div>
           </div>
@@ -3268,7 +3333,7 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
 function DefeatScreen({ game, onMenu, onReplay }) {
   const conquered = Object.values(game.territories).filter(t => t.attackable && t.owner === 'player').length
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-4">
       <div className="absolute inset-0 opacity-10">
         <svg width="100%" height="100%">
           <defs>
@@ -3280,37 +3345,37 @@ function DefeatScreen({ game, onMenu, onReplay }) {
         </svg>
       </div>
 
-      <div className="relative z-10 flex flex-col items-center gap-6">
+      <div className="relative z-10 flex flex-col items-center gap-4 sm:gap-6 w-full max-w-md">
         <div
-          className="text-3xl md:text-5xl text-red-enemy"
+          className="text-2xl sm:text-3xl md:text-5xl text-red-enemy"
           style={{ fontFamily: 'var(--font-military)' }}
         >
           MISSION FAILED
         </div>
 
-        <div className="text-sm text-text-dim tracking-widest">
+        <div className="text-xs sm:text-sm text-text-dim tracking-widest">
           ★ THE HOMELAND HAS FALLEN ★
         </div>
 
-        <div className="border border-red-enemy/20 bg-bg-card/80 p-6 min-w-[300px] text-center">
-          <div className="text-xs text-red-400 mb-4 tracking-wider">AFTER-ACTION REPORT</div>
-          <div className="space-y-2 text-sm text-text-dim">
+        <div className="border border-red-enemy/20 bg-bg-card/80 p-4 sm:p-6 w-full text-center">
+          <div className="text-[10px] sm:text-xs text-red-400 mb-3 sm:mb-4 tracking-wider">AFTER-ACTION REPORT</div>
+          <div className="space-y-2 text-xs sm:text-sm text-text-dim">
             <p>The United States has been overrun.</p>
             <p className="text-red-400 italic">"We came, we saw, we got our butts kicked."</p>
-            <p className="text-[10px] mt-4 opacity-60">Turn {game.turn} │ Territories liberated: {conquered}</p>
+            <p className="text-[9px] sm:text-[10px] mt-3 sm:mt-4 opacity-60">Turn {game.turn} │ Territories liberated: {conquered}</p>
           </div>
         </div>
 
-        <div className="flex gap-4 flex-wrap justify-center">
+        <div className="flex gap-3 sm:gap-4 flex-wrap justify-center w-full">
           <button
             onClick={onReplay}
-            className="border border-red-enemy/40 bg-red-enemy/10 text-red-400 px-6 py-2 text-xs tracking-widest uppercase hover:bg-red-enemy/20 transition-all cursor-pointer"
+            className="border border-red-enemy/40 bg-red-enemy/10 text-red-400 px-5 sm:px-6 py-2.5 sm:py-2 text-[10px] sm:text-xs tracking-widest uppercase hover:bg-red-enemy/20 transition-all cursor-pointer"
           >
             ▸ TRY AGAIN
           </button>
           <button
             onClick={onMenu}
-            className="border border-gray-neutral/40 bg-gray-neutral/10 text-text-dim px-6 py-2 text-xs tracking-widest uppercase hover:bg-gray-neutral/20 transition-all cursor-pointer"
+            className="border border-gray-neutral/40 bg-gray-neutral/10 text-text-dim px-5 sm:px-6 py-2.5 sm:py-2 text-[10px] sm:text-xs tracking-widest uppercase hover:bg-gray-neutral/20 transition-all cursor-pointer"
           >
             MAIN MENU
           </button>
@@ -3320,7 +3385,7 @@ function DefeatScreen({ game, onMenu, onReplay }) {
               const text = `🇺🇸 I lost the homeland on WARISK.FUN...\n\nLiberated ${conquered}/${TOTAL_ATTACKABLE} in ${game.turn} turns before falling.\n\n"${joke}"\n\nPlay free: warisk.fun`
               window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank')
             }}
-            className="border border-red-enemy/40 bg-red-enemy/10 text-red-400 px-6 py-2 text-xs tracking-widest uppercase hover:bg-red-enemy/20 transition-all cursor-pointer"
+            className="border border-red-enemy/40 bg-red-enemy/10 text-red-400 px-5 sm:px-6 py-2.5 sm:py-2 text-[10px] sm:text-xs tracking-widest uppercase hover:bg-red-enemy/20 transition-all cursor-pointer"
           >
             SHARE ON 𝕏
           </button>
@@ -3336,7 +3401,7 @@ function VictoryScreen({ game, onMenu, onReplay }) {
   const starsStr = '★'.repeat(rank.stars) + '☆'.repeat(5 - rank.stars)
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-4 py-6">
       {/* Background grid */}
       <div className="absolute inset-0 opacity-10">
         <svg width="100%" height="100%">
@@ -3349,28 +3414,28 @@ function VictoryScreen({ game, onMenu, onReplay }) {
         </svg>
       </div>
 
-      <div className="relative z-10 flex flex-col items-center gap-6">
+      <div className="relative z-10 flex flex-col items-center gap-4 sm:gap-6 w-full max-w-md">
         <div
-          className="text-3xl md:text-5xl text-gold-accent"
+          className="text-2xl sm:text-3xl md:text-5xl text-gold-accent"
           style={{ fontFamily: 'var(--font-military)' }}
         >
           FREEDOM DELIVERED
         </div>
 
-        <div className="text-sm text-text-dim tracking-widest">
+        <div className="text-xs sm:text-sm text-text-dim tracking-widest">
           ★ MISSION COMPLETE ★
         </div>
 
         {/* Rank */}
         <div className="text-center">
-          <div className="text-gold-accent text-lg">{starsStr}</div>
-          <div className="text-text-main text-sm tracking-wider">{rank.title}</div>
+          <div className="text-gold-accent text-base sm:text-lg">{starsStr}</div>
+          <div className="text-text-main text-xs sm:text-sm tracking-wider">{rank.title}</div>
         </div>
 
         {/* Stats */}
-        <div className="border border-green-500/20 bg-bg-card/80 p-6 min-w-[300px]">
-          <div className="text-xs text-text-dim mb-4 tracking-wider">OPERATION SUMMARY</div>
-          <div className="space-y-2 text-sm">
+        <div className="border border-green-500/20 bg-bg-card/80 p-4 sm:p-6 w-full">
+          <div className="text-[10px] sm:text-xs text-text-dim mb-3 sm:mb-4 tracking-wider">OPERATION SUMMARY</div>
+          <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
             <div className="flex justify-between gap-8">
               <span className="text-text-dim">Countries liberated:</span>
               <span>{conquered}/{TOTAL_ATTACKABLE}</span>
@@ -3411,7 +3476,7 @@ function VictoryScreen({ game, onMenu, onReplay }) {
           const board = getLeaderboard()
           if (board.length === 0) return null
           return (
-            <div className="border border-gold-accent/20 bg-bg-card/80 p-4 min-w-[300px]">
+            <div className="border border-gold-accent/20 bg-bg-card/80 p-3 sm:p-4 w-full">
               <div className="text-xs text-gold-accent mb-3 tracking-wider">TOP OPERATIONS</div>
               <div className="space-y-1">
                 {board.slice(0, 5).map((entry, i) => (
@@ -3428,16 +3493,16 @@ function VictoryScreen({ game, onMenu, onReplay }) {
         })()}
 
         {/* Buttons */}
-        <div className="flex gap-4 flex-wrap justify-center">
+        <div className="flex gap-3 sm:gap-4 flex-wrap justify-center w-full">
           <button
             onClick={onReplay}
-            className="border border-green-500/40 bg-green-500/10 text-green-400 px-6 py-2 text-xs tracking-widest uppercase hover:bg-green-500/20 transition-all cursor-pointer"
+            className="border border-green-500/40 bg-green-500/10 text-green-400 px-5 sm:px-6 py-2.5 sm:py-2 text-[10px] sm:text-xs tracking-widest uppercase hover:bg-green-500/20 transition-all cursor-pointer"
           >
             ▸ NEW OPERATION
           </button>
           <button
             onClick={onMenu}
-            className="border border-gray-neutral/40 bg-gray-neutral/10 text-text-dim px-6 py-2 text-xs tracking-widest uppercase hover:bg-gray-neutral/20 transition-all cursor-pointer"
+            className="border border-gray-neutral/40 bg-gray-neutral/10 text-text-dim px-5 sm:px-6 py-2.5 sm:py-2 text-[10px] sm:text-xs tracking-widest uppercase hover:bg-gray-neutral/20 transition-all cursor-pointer"
           >
             MAIN MENU
           </button>
@@ -3449,7 +3514,7 @@ function VictoryScreen({ game, onMenu, onReplay }) {
               const text = `🇺🇸 I liberated the world in ${game.turn} turns on WARISK.FUN!\n\nRank: ${rank.title} ${starEmojis}\nNukes: ${game.totalNukes} | Drones: ${game.totalDrones} | Missiles: ${game.totalMissiles}\n\n"${joke}"\n\nPlay free: warisk.fun`
               window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank')
             }}
-            className="border border-green-500/40 bg-green-500/10 text-green-400 px-6 py-2 text-xs tracking-widest uppercase hover:bg-green-500/20 transition-all cursor-pointer"
+            className="border border-green-500/40 bg-green-500/10 text-green-400 px-5 sm:px-6 py-2.5 sm:py-2 text-[10px] sm:text-xs tracking-widest uppercase hover:bg-green-500/20 transition-all cursor-pointer"
           >
             SHARE ON 𝕏
           </button>

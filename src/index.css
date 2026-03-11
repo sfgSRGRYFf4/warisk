@@ -191,3 +191,67 @@ body {
 .discount-badge {
   animation: discount-pulse 1s ease-in-out infinite;
 }
+
+/* Safe area insets for notched phones */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Prevent pull-to-refresh on mobile */
+html, body {
+  overscroll-behavior: none;
+}
+
+/* Terminal collapse animation */
+.terminal-collapse {
+  transition: height 0.2s ease-out;
+  overflow: hidden;
+}
+
+/* Mobile zoom controls */
+.zoom-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Better touch targets */
+@media (max-width: 639px) {
+  /* Minimum 44px touch targets on mobile */
+  .touch-target {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Landscape mode: compress vertical space */
+  @media (max-height: 500px) {
+    .landscape-hide {
+      display: none !important;
+    }
+    .landscape-compact {
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+    }
+  }
+}
+
+/* Prevent text selection on game elements */
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
