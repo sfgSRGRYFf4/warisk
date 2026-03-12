@@ -107,14 +107,42 @@ const SFX = (() => {
       audio.addEventListener('ended', () => { audio.src = '' })
       return audio
     },
-    nuke: () => {
-      const audio = new Audio('/nuke-explosion.mp3')
-      audio.volume = 0.2
-      audio.playbackRate = 1.5
-      audio.play().catch(() => {})
-      audio.addEventListener('ended', () => { audio.src = '' })
-      return audio
-    },
+    nuke: () => play(c => {
+      // Deep blast — massive low-frequency boom
+      const bBuf = c.createBuffer(1, c.sampleRate * 0.8, c.sampleRate)
+      const bd = bBuf.getChannelData(0)
+      for (let i = 0; i < bd.length; i++) bd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bd.length, 0.8)
+      const bs = c.createBufferSource(), bg = c.createGain(), bf = c.createBiquadFilter()
+      bs.buffer = bBuf; bf.type = 'lowpass'; bf.frequency.value = 400; bf.Q.value = 1
+      bg.gain.setValueAtTime(0.35, c.currentTime)
+      bg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.8)
+      bs.connect(bf).connect(bg).connect(c.destination); bs.start()
+      // Sub bass thud
+      const sub = c.createOscillator(), sg = c.createGain()
+      sub.type = 'sine'; sub.frequency.setValueAtTime(60, c.currentTime)
+      sub.frequency.exponentialRampToValueAtTime(15, c.currentTime + 0.5)
+      sg.gain.setValueAtTime(0.3, c.currentTime)
+      sg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5)
+      sub.connect(sg).connect(c.destination); sub.start(); sub.stop(c.currentTime + 0.5)
+      // Mid-range crackle
+      const mBuf = c.createBuffer(1, c.sampleRate * 0.5, c.sampleRate)
+      const md = mBuf.getChannelData(0)
+      for (let i = 0; i < md.length; i++) md[i] = (Math.random() * 2 - 1) * 0.6
+      const ms = c.createBufferSource(), mg = c.createGain(), mf = c.createBiquadFilter()
+      ms.buffer = mBuf; mf.type = 'bandpass'; mf.frequency.value = 1500; mf.Q.value = 0.5
+      mg.gain.setValueAtTime(0.15, c.currentTime + 0.05)
+      mg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5)
+      ms.connect(mf).connect(mg).connect(c.destination); ms.start(c.currentTime + 0.05)
+      // High debris scatter
+      const hBuf = c.createBuffer(1, c.sampleRate * 0.3, c.sampleRate)
+      const hd = hBuf.getChannelData(0)
+      for (let i = 0; i < hd.length; i++) hd[i] = (Math.random() * 2 - 1) * 0.3
+      const hs = c.createBufferSource(), hg = c.createGain(), hf = c.createBiquadFilter()
+      hs.buffer = hBuf; hf.type = 'highpass'; hf.frequency.value = 3000
+      hg.gain.setValueAtTime(0.1, c.currentTime + 0.02)
+      hg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3)
+      hs.connect(hf).connect(hg).connect(c.destination); hs.start(c.currentTime + 0.02)
+    }),
     victory: () => play(c => {
       const notes = [523, 659, 784, 1047]
       notes.forEach((freq, i) => {
@@ -289,40 +317,49 @@ const SFX = (() => {
       fg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + endT)
       fs.connect(ff).connect(fg).connect(c.destination); fs.start(c.currentTime + 0.2)
     }),
-    nukeLaunch: (flightSec = 2.3) => play(c => {
-      const endT = flightSec - 0.1
-      // Heavy launch burst
-      const wBuf = c.createBuffer(1, c.sampleRate * 0.25, c.sampleRate)
-      const wd = wBuf.getChannelData(0)
-      for (let i = 0; i < wd.length; i++) wd[i] = (Math.random() * 2 - 1) * 0.6
-      const ws = c.createBufferSource(), wg = c.createGain(), wf = c.createBiquadFilter()
-      ws.buffer = wBuf; wf.type = 'lowpass'; wf.frequency.setValueAtTime(300, c.currentTime)
-      wf.frequency.exponentialRampToValueAtTime(2000, c.currentTime + 0.25); wf.Q.value = 1
-      wg.gain.setValueAtTime(0.1, c.currentTime)
-      wg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3)
-      ws.connect(wf).connect(wg).connect(c.destination); ws.start()
-      // Rising ICBM tone
-      const o = c.createOscillator(), g = c.createGain()
-      o.type = 'sawtooth'; o.frequency.setValueAtTime(120, c.currentTime)
-      o.frequency.exponentialRampToValueAtTime(1500, c.currentTime + 0.5)
-      g.gain.setValueAtTime(0.06, c.currentTime)
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5)
-      o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.5)
-      // Long flight whoosh — adapts to flight duration
-      const whooshLen = Math.max(0.6, endT - 0.3)
-      const flightBuf = c.createBuffer(1, c.sampleRate * whooshLen, c.sampleRate)
-      const fld = flightBuf.getChannelData(0)
-      for (let i = 0; i < fld.length; i++) fld[i] = (Math.random() * 2 - 1)
-      const fs = c.createBufferSource(), fg = c.createGain(), ff = c.createBiquadFilter()
-      fs.buffer = flightBuf; ff.type = 'bandpass'; ff.frequency.value = 400; ff.Q.value = 0.8
-      ff.frequency.setValueAtTime(400, c.currentTime + 0.3)
-      ff.frequency.linearRampToValueAtTime(900, c.currentTime + endT)
-      fg.gain.setValueAtTime(0, c.currentTime)
-      fg.gain.linearRampToValueAtTime(0.05, c.currentTime + 0.5)
-      fg.gain.setValueAtTime(0.05, c.currentTime + endT - 0.3)
-      fg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + endT)
-      fs.connect(ff).connect(fg).connect(c.destination); fs.start(c.currentTime + 0.3)
-    }),
+    nukeLaunch: (flightSec = 2.3) => {
+      const sources = []
+      try {
+        const c = getCtx()
+        const endT = flightSec - 0.1
+        // Heavy launch burst — loud initial boom
+        const wBuf = c.createBuffer(1, c.sampleRate * 0.4, c.sampleRate)
+        const wd = wBuf.getChannelData(0)
+        for (let i = 0; i < wd.length; i++) wd[i] = (Math.random() * 2 - 1) * 0.8
+        const ws = c.createBufferSource(), wg = c.createGain(), wf = c.createBiquadFilter()
+        ws.buffer = wBuf; wf.type = 'lowpass'; wf.frequency.setValueAtTime(200, c.currentTime)
+        wf.frequency.exponentialRampToValueAtTime(2500, c.currentTime + 0.35); wf.Q.value = 1.5
+        wg.gain.setValueAtTime(0.25, c.currentTime)
+        wg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.45)
+        ws.connect(wf).connect(wg).connect(c.destination); ws.start()
+        sources.push(ws)
+        // Rising ICBM tone — clearly audible siren
+        const o = c.createOscillator(), g = c.createGain()
+        o.type = 'sawtooth'; o.frequency.setValueAtTime(80, c.currentTime)
+        o.frequency.exponentialRampToValueAtTime(1800, c.currentTime + 0.6)
+        g.gain.setValueAtTime(0.15, c.currentTime)
+        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.6)
+        o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.6)
+        sources.push(o)
+        // Long flight whoosh — adapts to flight duration
+        const whooshLen = Math.max(0.6, endT - 0.3)
+        const flightBuf = c.createBuffer(1, c.sampleRate * whooshLen, c.sampleRate)
+        const fld = flightBuf.getChannelData(0)
+        for (let i = 0; i < fld.length; i++) fld[i] = (Math.random() * 2 - 1)
+        const fs = c.createBufferSource(), fg = c.createGain(), ff = c.createBiquadFilter()
+        fs.buffer = flightBuf; ff.type = 'bandpass'; ff.frequency.value = 400; ff.Q.value = 0.8
+        ff.frequency.setValueAtTime(400, c.currentTime + 0.3)
+        ff.frequency.linearRampToValueAtTime(900, c.currentTime + endT)
+        fg.gain.setValueAtTime(0, c.currentTime)
+        fg.gain.linearRampToValueAtTime(0.12, c.currentTime + 0.5)
+        fg.gain.setValueAtTime(0.12, c.currentTime + endT - 0.3)
+        fg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + endT)
+        fs.connect(ff).connect(fg).connect(c.destination); fs.start(c.currentTime + 0.3)
+        sources.push(fs)
+      } catch {}
+      // Return stop: force-stop every source node immediately
+      return () => { sources.forEach(s => { try { s.stop(0) } catch {} }) }
+    },
     deploy: () => play(c => {
       for (let step = 0; step < 2; step++) {
         const o = c.createOscillator(), g = c.createGain()
@@ -1029,8 +1066,8 @@ function MapAnimation({ anim }) {
 
 function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerritoryClick, onAllyClick, attackFrom, fortifyFrom, dragGuardRef, highlightedTargets, mapAnimations, onCentroidsReady }) {
   const { isMobile } = useIsMobile()
-  const [zoom, setZoom] = useState(() => isMobile ? 1.5 : 1.1)
-  const [pan, setPan] = useState(() => isMobile ? { x: -30, y: -5 } : { x: 0, y: 0 })
+  const [zoom, setZoom] = useState(() => isMobile ? 1.8 : 1.1)
+  const [pan, setPan] = useState(() => isMobile ? { x: -20, y: 10 } : { x: 0, y: 0 })
   const containerRef = useRef(null)
   const dragRef = useRef({ dragging: false, wasDragging: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0 })
   const tooltipTimerRef = useRef(null)
@@ -1491,11 +1528,6 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
           const diff = t.difficulty ? DIFFICULTY_BADGE[t.difficulty] : null
           const hasStatus = t.building || t.shield || t.irradiated > 0
           const boxH = hasStatus ? 28 : 22
-          // Difficulty-colored border for enemy territories
-          const borderColor = isSelected ? '#F59E0B' : isHighlit ? '#FBBF24' : (diff && t.owner === 'enemy') ? diff.color : colors.stroke
-          const borderWidth = isSelected ? 1.5 : isHighlit ? 1.2 : (diff && t.owner === 'enemy') ? 0.8 : 0.5
-          const borderOpacity = isSelected ? 1 : isHighlit ? 0.8 : (diff && t.owner === 'enemy') ? 0.6 : 0.4
-
           return (
             <g key={`label-${id}`}
               className="cursor-pointer"
@@ -1504,16 +1536,16 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
               onMouseLeave={() => setHoveredTerritory(null)}
               onTouchEnd={(e) => { if (!dragGuardRef?.current?.wasDragging) { e.stopPropagation(); handleTouchTap({ id, type: 'territory', ...t }) } }}
             >
-              {/* Label background — border color indicates difficulty */}
+              {/* Label background — owner colors (red=enemy, blue=player) */}
               <rect
                 x={cx - 20} y={cy - 10}
                 width={40} height={boxH}
                 rx={2}
                 fill="#0A0E0B"
                 fillOpacity={0.85}
-                stroke={borderColor}
-                strokeWidth={borderWidth}
-                strokeOpacity={borderOpacity}
+                stroke={isSelected ? '#F59E0B' : isHighlit ? '#FBBF24' : colors.stroke}
+                strokeWidth={isSelected ? 1.5 : isHighlit ? 1.2 : 0.5}
+                strokeOpacity={isSelected ? 1 : isHighlit ? 0.8 : 0.4}
               />
 
               {/* Country name */}
@@ -1627,7 +1659,7 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
             className="zoom-btn bg-bg-card/90 border border-green-500/30 text-green-400 active:bg-green-500/20"
           >-</button>
           <button
-            onClick={() => { setZoom(1.5); setPan({ x: -30, y: -5 }) }}
+            onClick={() => { setZoom(1.8); setPan({ x: -20, y: 10 }) }}
             className="zoom-btn text-[8px] bg-bg-card/90 border border-green-500/20 text-text-dim active:text-green-400"
           >RST</button>
         </div>
@@ -2663,12 +2695,13 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
           // Immediately: animation + ICBM launch sound adapted to flight distance
           const { flightMs: nukeFlightMs } = addMapAnimation('nuke_blast', 'usa', id)
           const nukeImpactMs = nukeFlightMs || 2300
-          SFX.nukeLaunch(nukeImpactMs / 1000)
+          const stopLaunchSound = SFX.nukeLaunch(nukeImpactMs / 1000)
           setGame(prev => ({ ...prev, warisk: prev.warisk - cost, halveCost: cost > 0 ? false : prev.halveCost, freeNuke: false, totalNukes: prev.totalNukes + 1 }))
           setSelectedItem(null)
-          // Delayed: impact sounds + effects sync with ICBM animation
+          // Delayed: kill launch sound + play explosion on impact
           const tName = territory.name
           scheduleTimeout(() => {
+            stopLaunchSound()
             SFX.nuke()
             triggerShake()
             setGame(prev => {
