@@ -1049,8 +1049,8 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
   // Projection: Natural Earth → fits nicely in SVG
   const projection = useMemo(() => {
     return geoNaturalEarth1()
-      .scale(150)
-      .translate([450, 260])
+      .scale(155)
+      .translate([450, 280])
   }, [])
 
   const pathGen = useMemo(() => geoPath(projection), [projection])
@@ -1058,9 +1058,9 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
   // Clamp pan so it doesn't go out of bounds
   const clampPan = useCallback((px, py, z) => {
     const vw = 900 / z
-    const vh = 520 / z
+    const vh = 450 / z
     const maxPanX = (900 - vw) / 2
-    const maxPanY = (520 - vh) / 2
+    const maxPanY = (450 - vh) / 2
     return {
       x: Math.max(-maxPanX, Math.min(maxPanX, px)),
       y: Math.max(-maxPanY, Math.min(maxPanY, py)),
@@ -1115,7 +1115,7 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
       setZoom(z => {
         if (z <= 1) return z // no pan when not zoomed
         const svgUnitsPerPixelX = (900 / z) / rect.width
-        const svgUnitsPerPixelY = (520 / z) / rect.height
+        const svgUnitsPerPixelY = (450 / z) / rect.height
         const dx = (e.clientX - dragRef.current.startX) * svgUnitsPerPixelX
         const dy = (e.clientY - dragRef.current.startY) * svgUnitsPerPixelY
         setPan(clampPan(
@@ -1191,7 +1191,7 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
           setZoom(z => {
             if (z <= 1) return z
             const svgPxX = (900 / z) / rect.width
-            const svgPxY = (520 / z) / rect.height
+            const svgPxY = (450 / z) / rect.height
             const mx = (e.touches[0].clientX - dragRef.current.startX) * svgPxX
             const my = (e.touches[0].clientY - dragRef.current.startY) * svgPxY
             setPan(clampPan(dragRef.current.startPanX - mx, dragRef.current.startPanY - my, z))
@@ -1246,16 +1246,23 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
           }
         }
       }
-      // Manual offsets for overlapping Middle East labels
-      if (c.iraq) { c.iraq = [c.iraq[0], c.iraq[1] + 8] }
-      if (c.iran) { c.iran = [c.iran[0] + 20, c.iran[1] - 10] }
-      if (c.yemen) { c.yemen = [c.yemen[0], c.yemen[1] + 20] }
-      if (c.syria) { c.syria = [c.syria[0] - 10, c.syria[1] - 18] }
-      if (c.libya) { c.libya = [c.libya[0] - 22, c.libya[1]] }
-      if (c.afghanistan) { c.afghanistan = [c.afghanistan[0] + 22, c.afghanistan[1]] }
-      if (c.somalia) { c.somalia = [c.somalia[0], c.somalia[1] + 20] }
+      // Manual offsets for overlapping Middle East labels — spread further apart
+      if (c.iraq) { c.iraq = [c.iraq[0] - 5, c.iraq[1] + 10] }
+      if (c.iran) { c.iran = [c.iran[0] + 25, c.iran[1] - 12] }
+      if (c.yemen) { c.yemen = [c.yemen[0] - 5, c.yemen[1] + 22] }
+      if (c.syria) { c.syria = [c.syria[0] - 15, c.syria[1] - 20] }
+      if (c.libya) { c.libya = [c.libya[0] - 25, c.libya[1] - 5] }
+      if (c.afghanistan) { c.afghanistan = [c.afghanistan[0] + 28, c.afghanistan[1] + 2] }
+      if (c.somalia) { c.somalia = [c.somalia[0], c.somalia[1] + 22] }
+      // Central America — spread apart to avoid overlap
+      if (c.panama) { c.panama = [c.panama[0] - 8, c.panama[1] + 5] }
+      if (c.venezuela) { c.venezuela = [c.venezuela[0] + 8, c.venezuela[1] - 3] }
+      // Cuba — nudge left
+      if (c.cuba) { c.cuba = [c.cuba[0] - 5, c.cuba[1] - 3] }
       // USA offset - push label slightly down-left to avoid Canada overlap
       if (c.usa) { c.usa = [c.usa[0] - 10, c.usa[1] + 10] }
+      // Greenland offset — push down so it doesn't clip top of map
+      if (c.greenland) { c.greenland = [c.greenland[0], c.greenland[1] + 5] }
 
       return { worldFeatures: geo.features, centroids: c, mapLoadError: null }
     } catch {
@@ -1290,9 +1297,9 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
 
   // Dynamic viewBox for zoom + pan
   const vw = 900 / zoom
-  const vh = 520 / zoom
+  const vh = 450 / zoom
   const vx = (900 - vw) / 2 + pan.x
-  const vy = (520 - vh) / 2 + pan.y
+  const vy = (450 - vh) / 2 + pan.y
 
   if (mapLoadError) {
     return (
@@ -1454,18 +1461,22 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
           )
         })}
 
-        {/* Neighbor connection lines */}
-        {connections.map(line => (
-          <line
-            key={line.key}
-            x1={line.x1} y1={line.y1}
-            x2={line.x2} y2={line.y2}
-            stroke="#22C55E"
-            strokeWidth="0.8"
-            opacity="0.2"
-            strokeDasharray="4 4"
-          />
-        ))}
+        {/* Neighbor connection lines — highlight relevant connections */}
+        {connections.map(line => {
+          const ids = line.key.split('-')
+          const isActive = (attackFrom && ids.includes(attackFrom)) || (fortifyFrom && ids.includes(fortifyFrom))
+          return (
+            <line
+              key={line.key}
+              x1={line.x1} y1={line.y1}
+              x2={line.x2} y2={line.y2}
+              stroke={isActive ? '#F59E0B' : '#22C55E'}
+              strokeWidth={isActive ? 1.2 : 0.8}
+              opacity={isActive ? 0.5 : 0.15}
+              strokeDasharray={isActive ? '3 2' : '4 4'}
+            />
+          )
+        })}
 
         {/* Territory labels (troops, names, etc.) on top of real country shapes */}
         {Object.entries(territories).map(([id, t]) => {
@@ -1476,7 +1487,14 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
           const cy = c[1]
           const colors = OWNER_COLORS[t.owner] || { fill: '#6B7280', stroke: '#9CA3AF', text: '#E5E7EB' }
           const isSelected = attackFrom === id || fortifyFrom === id
+          const isHighlit = highlightedTargets?.has(id)
           const diff = t.difficulty ? DIFFICULTY_BADGE[t.difficulty] : null
+          const hasStatus = t.building || t.shield || t.irradiated > 0
+          const boxH = hasStatus ? 28 : 22
+          // Difficulty-colored border for enemy territories
+          const borderColor = isSelected ? '#F59E0B' : isHighlit ? '#FBBF24' : (diff && t.owner === 'enemy') ? diff.color : colors.stroke
+          const borderWidth = isSelected ? 1.5 : isHighlit ? 1.2 : (diff && t.owner === 'enemy') ? 0.8 : 0.5
+          const borderOpacity = isSelected ? 1 : isHighlit ? 0.8 : (diff && t.owner === 'enemy') ? 0.6 : 0.4
 
           return (
             <g key={`label-${id}`}
@@ -1486,16 +1504,16 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
               onMouseLeave={() => setHoveredTerritory(null)}
               onTouchEnd={(e) => { if (!dragGuardRef?.current?.wasDragging) { e.stopPropagation(); handleTouchTap({ id, type: 'territory', ...t }) } }}
             >
-              {/* Label background */}
+              {/* Label background — border color indicates difficulty */}
               <rect
-                x={cx - 19} y={cy - 10}
-                width={38} height={22}
+                x={cx - 20} y={cy - 10}
+                width={40} height={boxH}
                 rx={2}
                 fill="#0A0E0B"
-                fillOpacity={0.8}
-                stroke={isSelected ? '#F59E0B' : colors.stroke}
-                strokeWidth={isSelected ? 1.5 : 0.5}
-                strokeOpacity={isSelected ? 1 : 0.4}
+                fillOpacity={0.85}
+                stroke={borderColor}
+                strokeWidth={borderWidth}
+                strokeOpacity={borderOpacity}
               />
 
               {/* Country name */}
@@ -1521,13 +1539,14 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
                 {t.troops > 0 ? `▣ ${t.troops}` : '× 0'}
               </text>
 
-              {/* Status indicators */}
-              {(t.building || t.shield || t.irradiated > 0) && (
+              {/* Status indicators — inside the box */}
+              {hasStatus && (
                 <text
-                  x={cx} y={cy + 18}
+                  x={cx} y={cy + 15}
                   textAnchor="middle"
-                  fontSize="7"
+                  fontSize="5.5"
                   fill="#F59E0B"
+                  opacity="0.85"
                 >
                   {t.building ? (t.building === 'factory' ? '⌂' : '⏣') : ''}
                   {t.shield ? ' ◇' : ''}
@@ -1535,17 +1554,14 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
                 </text>
               )}
 
-              {/* Difficulty badge */}
+              {/* Difficulty pip — small colored dot at top-right corner */}
               {diff && t.owner === 'enemy' && (
-                <text
-                  x={cx + 26} y={cy - 5}
-                  textAnchor="start"
-                  fontSize="5"
+                <circle
+                  cx={cx + 17} cy={cy - 7}
+                  r={2.5}
                   fill={diff.color}
-                  fontWeight="bold"
-                >
-                  {diff.label}
-                </text>
+                  fillOpacity={0.8}
+                />
               )}
             </g>
           )
@@ -1658,7 +1674,7 @@ function WorldMap({ territories, hoveredTerritory, setHoveredTerritory, onTerrit
                   )}
                 </div>
                 <div className="text-text-dim mt-1 space-y-0.5">
-                  <div>Troops: ▣ {t.troops} │ Owner: {t.owner}</div>
+                  <div>Troops: ▣ {t.troops} │ {t.owner === 'player' ? 'ALLIED' : 'HOSTILE'}</div>
                   {t.building && <div>Building: {t.building === 'factory' ? '⌂ Factory' : '⏣ Refinery'}</div>}
                   {t.shield && <div>◇ Shield active</div>}
                   {t.irradiated > 0 && <div className="text-gold-accent">✶ Irradiated ({t.irradiated} turns)</div>}
@@ -1985,7 +2001,7 @@ function GameTerminal({ log }) {
 
   return (
     <div className="relative z-10 border-t border-green-500/20 bg-black/80 flex-shrink-0 terminal-collapse"
-      style={{ height: effectiveCollapsed ? '20px' : isMobile ? '50px' : '70px' }}
+      style={{ height: effectiveCollapsed ? '20px' : isMobile ? '50px' : '80px' }}
     >
       {/* Toggle button */}
       {isMobile && (
@@ -2006,7 +2022,9 @@ function GameTerminal({ log }) {
             {log.length > 0 ? log[log.length - 1].text : 'Awaiting transmission...'}
           </div>
         ) : log.length === 0 ? (
-          <div className="text-xs text-gray-600 leading-relaxed">Awaiting transmission...</div>
+          <div className="text-[10px] sm:text-xs text-green-400/30 leading-relaxed">
+            {'>'} Awaiting transmission<span className="animate-pulse">_</span>
+          </div>
         ) : log.map((entry, i) => (
           <div key={i} className={`text-[10px] sm:text-xs terminal-line leading-relaxed ${
             entry.type === 'player' ? 'text-green-400' :
@@ -3274,8 +3292,14 @@ function GameScreen({ game, setGame, wariskPerSec, playerTerritories, enemyTerri
       {/* Game Terminal — event log */}
       <GameTerminal log={game.terminalLog || []} />
 
-      {/* Action bar — redesigned bigger */}
-      <div className="relative z-10 flex-shrink-0 border-t-2 border-green-500/40 bg-bg-card/95 action-bar-glow py-0.5 safe-bottom">
+      {/* Action bar — phase-colored border */}
+      <div className={`relative z-10 flex-shrink-0 border-t-2 bg-bg-card/95 action-bar-glow py-0.5 safe-bottom ${
+        game.phase === 'strike' ? 'border-red-enemy/50' :
+        game.phase === 'attack' ? 'border-gold-accent/50' :
+        game.phase === 'fortify' ? 'border-blue-player/50' :
+        game.phase === 'enemy_turn' ? 'border-red-enemy/40' :
+        'border-green-500/40'
+      }`}>
         {/* Phase indicators */}
         <div className="flex items-center justify-between px-2 sm:px-4 pt-1 pb-0.5 landscape-compact">
           <div className="flex items-center gap-1.5 sm:gap-4 overflow-x-auto">
@@ -3677,7 +3701,6 @@ function createInitialGameState(difficulty = 'normal') {
     difficulty,
     warisk: diff.startMoney,
     territories,
-    conqueredCount: 0,
     totalNukes: 0,
     totalDrones: 0,
     totalMissiles: 0,
