@@ -593,7 +593,7 @@ function MenuScreen({ onStart, hasSave, onResume }) {
           href="https://x.com/WARISK_fun"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 text-xs text-text-dim tracking-widest uppercase opacity-50 hover:opacity-100 transition-opacity duration-200"
+          className="flex items-center gap-2 text-xs text-white/70 tracking-widest uppercase border border-white/20 hover:border-white/50 hover:text-white px-3 py-1.5 rounded transition-all duration-200 hover:bg-white/5"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.259 5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
