@@ -3834,15 +3834,59 @@ export default function App() {
     return () => clearInterval(interval)
   }, [screen])
 
+  // Pentagon corruption messages — shown when idle money is drained
+  const corruptionMsgs = useRef([
+    "Pentagon audit: Ⓦ{n} unaccounted for. Blamed on office supplies.",
+    "Ⓦ{n} vanished. Contractor claims it was for 'morale coffee'.",
+    "Lockheed Martin invoices Ⓦ{n} for a single coffee mug. Again.",
+    "Senator spotted with new yacht. Ⓦ{n} missing from budget.",
+    "CIA black budget absorbed Ⓦ{n}. No further questions.",
+    "Ⓦ{n} spent on a PowerPoint about saving money.",
+    "Defense contractor bills Ⓦ{n} for a toilet seat. Premium grade.",
+    "Ⓦ{n} allocated to 'classified morale operations' (golf).",
+    "Pentagon loses Ⓦ{n}. Again. Auditor quits. Again.",
+    "Ⓦ{n} redirected to study if troops prefer Pepsi or Coke.",
+    "Ⓦ{n} spent lobbying Congress to approve more spending.",
+    "General's retirement party cost Ⓦ{n}. Open bar.",
+    "Ⓦ{n} disappeared. Pentagon: 'Have you checked the couch?'",
+    "Raytheon charges Ⓦ{n} for a 'freedom consultation fee'.",
+    "Ⓦ{n} used to build a gym nobody uses on a base nobody visits.",
+  ])
+  const lastCorruptionRef = useRef(0)
+
   useEffect(() => {
     if (screen !== 'game') return
     const interval = setInterval(() => {
       setGame(prev => {
         const income = prev.tripleIncome ? wariskPerSecRef.current * 3 : prev.doubleIncome ? wariskPerSecRef.current * 2 : wariskPerSecRef.current
+        let newWarisk = prev.warisk + income
+
+        // Pentagon corruption — only on normal & hard, kicks in above 500W
+        let corruptionEntry = null
+        if (prev.difficulty !== 'easy' && prev.warisk > 500) {
+          const excess = prev.warisk - 500
+          const drainRate = prev.difficulty === 'hard'
+            ? Math.floor(excess * 0.04)  // Hard: 4% of excess per second
+            : Math.floor(excess * 0.025) // Normal: 2.5% of excess per second
+          const drain = Math.max(1, Math.min(drainRate, newWarisk - 100)) // never drain below 100
+          if (drain > 0) {
+            newWarisk = newWarisk - drain
+            // Show corruption message every 8 seconds
+            const now = Date.now()
+            if (now - lastCorruptionRef.current > 8000) {
+              lastCorruptionRef.current = now
+              const msgs = corruptionMsgs.current
+              const msg = msgs[Math.floor(Math.random() * msgs.length)].replace('{n}', drain)
+              corruptionEntry = { type: 'event', text: `[CORRUPTION] ${msg}` }
+            }
+          }
+        }
+
         return {
           ...prev,
-          warisk: prev.warisk + income,
+          warisk: newWarisk,
           totalWariskEarned: prev.totalWariskEarned + income,
+          ...(corruptionEntry ? { terminalLog: [...(prev.terminalLog || []).slice(-49), corruptionEntry] } : {}),
         }
       })
     }, 1000)
