@@ -3874,27 +3874,24 @@ export default function App() {
         let newWarisk = prev.warisk + income
 
         // Pentagon corruption — only on normal & hard, kicks in above 500W
-        // Drain starts small (~20W) and escalates the longer you hoard
+        // Drain ONLY fires every 15s (not every tick), starts at ~20W and escalates
         let corruptionEntry = null
-        if (prev.difficulty !== 'easy' && prev.warisk > 500) {
-          const excess = prev.warisk - 500
-          const count = corruptionCountRef.current
-          // Escalating drain: starts at ~20-25, grows with count and excess
-          const baseDrain = 20 + count * 5
-          const scaledDrain = prev.difficulty === 'hard'
-            ? baseDrain + Math.floor(excess * 0.03)
-            : baseDrain + Math.floor(excess * 0.015)
-          const drain = Math.max(20, Math.min(scaledDrain, newWarisk - 100))
-          if (drain > 0) {
-            newWarisk = newWarisk - drain
-
-            // Show message every 15 seconds
-            const now = Date.now()
-            if (now - lastCorruptionRef.current > 15000) {
-              lastCorruptionRef.current = now
-              corruptionCountRef.current = count + 1
-
-              // Shuffle queue when empty — guarantees no repeats
+        if (prev.difficulty !== 'easy' && newWarisk > 500) {
+          const now = Date.now()
+          if (now - lastCorruptionRef.current > 15000) {
+            lastCorruptionRef.current = now
+            const count = corruptionCountRef.current
+            corruptionCountRef.current = count + 1
+            const excess = newWarisk - 500
+            // Escalating: 20, 25, 30, 35... + % of excess
+            const baseDrain = 20 + count * 5
+            const scaledDrain = prev.difficulty === 'hard'
+              ? baseDrain + Math.floor(excess * 0.05)
+              : baseDrain + Math.floor(excess * 0.03)
+            const drain = Math.min(scaledDrain, newWarisk - 100) // never below 100W
+            if (drain > 0) {
+              newWarisk = newWarisk - drain
+              // Shuffle queue when empty — no repeats until all shown
               if (corruptionQueue.current.length === 0) {
                 corruptionQueue.current = [...corruptionPool.current].sort(() => Math.random() - 0.5)
               }
@@ -3918,6 +3915,9 @@ export default function App() {
 
   const goToGame = useCallback((difficulty = 'normal') => {
     setGame(createInitialGameState(difficulty))
+    corruptionCountRef.current = 0
+    corruptionQueue.current = []
+    lastCorruptionRef.current = 0
     clearSave()
     setHasSave(false)
     setScreen('game')
