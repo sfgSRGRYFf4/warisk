@@ -3834,8 +3834,8 @@ export default function App() {
     return () => clearInterval(interval)
   }, [screen])
 
-  // Pentagon corruption messages — shown when idle money is drained
-  const corruptionMsgs = useRef([
+  // Pentagon corruption — shuffled message queue, no repeats until all shown
+  const corruptionPool = useRef([
     "Pentagon audit: Ⓦ{n} unaccounted for. Blamed on office supplies.",
     "Ⓦ{n} vanished. Contractor claims it was for 'morale coffee'.",
     "Lockheed Martin invoices Ⓦ{n} for a single coffee mug. Again.",
@@ -3851,8 +3851,20 @@ export default function App() {
     "Ⓦ{n} disappeared. Pentagon: 'Have you checked the couch?'",
     "Raytheon charges Ⓦ{n} for a 'freedom consultation fee'.",
     "Ⓦ{n} used to build a gym nobody uses on a base nobody visits.",
+    "Ⓦ{n} invoiced for 'strategic umbrella deployment research'.",
+    "Congressional lunch bill: Ⓦ{n}. Lobster. Twice.",
+    "Ⓦ{n} wired to offshore account. Pentagon: 'What account?'",
+    "Ⓦ{n} spent on a study about why the last study failed.",
+    "Contractor charges Ⓦ{n} for a hammer. It's a nice hammer.",
+    "Ⓦ{n} lost in transit. The transit was a senator's briefcase.",
+    "Pentagon HR retreat cost Ⓦ{n}. Location: Hawaii. Duration: 3 weeks.",
+    "Ⓦ{n} allocated to 'morale-boosting wall art' for the war room.",
+    "Ⓦ{n} billed for a drone that doesn't fly. It's decorative.",
+    "Military spouse appreciation event: Ⓦ{n}. Catering by Michelin chef.",
   ])
+  const corruptionQueue = useRef([])
   const lastCorruptionRef = useRef(0)
+  const corruptionCountRef = useRef(0) // tracks how many times corruption has fired
 
   useEffect(() => {
     if (screen !== 'game') return
@@ -3862,21 +3874,32 @@ export default function App() {
         let newWarisk = prev.warisk + income
 
         // Pentagon corruption — only on normal & hard, kicks in above 500W
+        // Drain starts small (~20W) and escalates the longer you hoard
         let corruptionEntry = null
         if (prev.difficulty !== 'easy' && prev.warisk > 500) {
           const excess = prev.warisk - 500
-          const drainRate = prev.difficulty === 'hard'
-            ? Math.floor(excess * 0.04)  // Hard: 4% of excess per second
-            : Math.floor(excess * 0.025) // Normal: 2.5% of excess per second
-          const drain = Math.max(1, Math.min(drainRate, newWarisk - 100)) // never drain below 100
+          const count = corruptionCountRef.current
+          // Escalating drain: starts at ~20-25, grows with count and excess
+          const baseDrain = 20 + count * 5
+          const scaledDrain = prev.difficulty === 'hard'
+            ? baseDrain + Math.floor(excess * 0.03)
+            : baseDrain + Math.floor(excess * 0.015)
+          const drain = Math.max(20, Math.min(scaledDrain, newWarisk - 100))
           if (drain > 0) {
             newWarisk = newWarisk - drain
-            // Show corruption message every 8 seconds
+
+            // Show message every 15 seconds
             const now = Date.now()
-            if (now - lastCorruptionRef.current > 8000) {
+            if (now - lastCorruptionRef.current > 15000) {
               lastCorruptionRef.current = now
-              const msgs = corruptionMsgs.current
-              const msg = msgs[Math.floor(Math.random() * msgs.length)].replace('{n}', drain)
+              corruptionCountRef.current = count + 1
+
+              // Shuffle queue when empty — guarantees no repeats
+              if (corruptionQueue.current.length === 0) {
+                corruptionQueue.current = [...corruptionPool.current].sort(() => Math.random() - 0.5)
+              }
+              const template = corruptionQueue.current.pop()
+              const msg = template.replace('{n}', drain)
               corruptionEntry = { type: 'event', text: `[CORRUPTION] ${msg}` }
             }
           }
